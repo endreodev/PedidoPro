@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: pedidospro-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pedidospro
+      MYSQL_USER: pedidospro
+      MYSQL_PASSWORD: pedidospro
+    ports:
+      - "3306:3306"
+    volumes:
+      # Aplica o schema automaticamente na primeira subida do container.
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - pedidospro-dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Frontend (Vite dev server). O backend Laravel ainda nao existe;
+  # quando existir, adicionar um servico "backend" aqui apontando para db.
+  frontend:
+    image: node:20-alpine
+    container_name: pedidospro-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_URL: http://localhost:8000/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    profiles: ["full"]   # sobe so com: docker compose --profile full up
+
+volumes:
+  pedidospro-dbdata:

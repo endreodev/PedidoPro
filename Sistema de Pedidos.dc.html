@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Manrope', system-ui, sans-serif; color: #16181d; background: #eef0f4; -webkit-font-smoothing: antialiased; }
+  a { color: #4b57d6; text-decoration: none; }
+  a:hover { color: #3541b8; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cdd2db; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #b4bac6; background-clip: content-box; }
+  input, select, button, textarea { font-family: inherit; }
+  @keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</helmet>
+
+<div style="display:flex; height:100vh; width:100%; overflow:hidden; background:#eef0f4;">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside style="width:236px; flex-shrink:0; background:#171922; display:flex; flex-direction:column; padding:18px 14px; gap:4px; overflow-y:auto; min-height:0;">
+    <div style="display:flex; align-items:center; gap:11px; padding:6px 8px 18px 8px;">
+      <div style="width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#5865f2,#8a5bd6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px;">P</div>
+      <div>
+        <div style="color:#fff; font-weight:800; font-size:15px; letter-spacing:-0.2px;">PedidoPro</div>
+        <div style="color:#6c7385; font-size:11px; font-weight:600;">Gestão de vendas</div>
+      </div>
+    </div>
+
+    <!-- empresa switcher -->
+    <div style="position:relative; margin-bottom:6px;">
+      <button onClick="{{ toggleEmpresaMenu }}" style="width:100%; display:flex; align-items:center; gap:10px; background:#20232f; border:1px solid #2c3040; border-radius:11px; padding:9px 10px; cursor:pointer;" style-hover="border-color:#3a4152;">
+        <div style="width:30px; height:30px; border-radius:8px; background:{{ empresaAtual.cor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; flex-shrink:0;">{{ empresaAtual.initials }}</div>
+        <div style="flex:1; min-width:0; text-align:left; line-height:1.25;">
+          <div style="font-size:9px; color:#6c7385; font-weight:700; letter-spacing:0.4px;">EMPRESA</div>
+          <div style="font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ empresaAtual.nome }}</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6c7385" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <sc-if value="{{ empresaMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; top:56px; left:0; right:0; background:#fff; border:1px solid #e2e6ee; border-radius:13px; box-shadow:0 16px 40px rgba(0,0,0,.32); z-index:40; overflow:hidden; animation:popIn .15s ease;">
+          <div style="padding:11px 14px 8px; font-size:10.5px; font-weight:800; color:#98a0af; letter-spacing:0.6px;">MINHAS EMPRESAS</div>
+          <div style="max-height:280px; overflow:auto;">
+            <sc-for list="{{ empresaList }}" as="e" hint-placeholder-count="3">
+              <button onClick="{{ e.onPick }}" style="width:100%; display:flex; align-items:center; gap:11px; text-align:left; padding:10px 14px; border:none; background:{{ e.rowBg }}; cursor:pointer;" style-hover="background:#f4f6fa;">
+                <div style="width:34px; height:34px; border-radius:9px; background:{{ e.cor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; flex-shrink:0;">{{ e.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ e.nome }}</div>
+                  <div style="font-size:11px; color:#98a0af; font-weight:600;">{{ e.ramo }} · {{ e.cnpj }}</div>
+                </div>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:{{ e.checkOpacity }}; flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </sc-for>
+          </div>
+          <button onClick="{{ novaEmpresa }}" style="width:100%; display:flex; align-items:center; gap:9px; padding:12px 14px; border:none; border-top:1px solid #eef0f4; background:#fff; cursor:pointer; font-size:13px; font-weight:700; color:#5865f2;" style-hover="background:#f7f8fb;">
+            <span style="width:22px; height:22px; border-radius:6px; background:#eceeff; display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;">+</span> Adicionar empresa
+          </button>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="color:#565d70; font-size:10.5px; font-weight:700; letter-spacing:0.8px; padding:8px 10px 4px;">PRINCIPAL</div>
+    <button onClick="{{ goDashboard }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.dashboard }}; color:{{ navFg.dashboard }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button onClick="{{ goPdv }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.pdv }}; color:{{ navFg.pdv }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      PDV — Venda
+    </button>
+    <button onClick="{{ goPedidos }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.pedidos }}; color:{{ navFg.pedidos }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      Pedidos
+    </button>
+
+    <div style="color:#565d70; font-size:10.5px; font-weight:700; letter-spacing:0.8px; padding:14px 10px 4px;">CADASTROS</div>
+    <button onClick="{{ goClientes }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.clientes }}; color:{{ navFg.clientes }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </button>
+    <button onClick="{{ goProdutos }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.produtos }}; color:{{ navFg.produtos }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Produtos
+    </button>
+    <button onClick="{{ goGrupos }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.grupos }}; color:{{ navFg.grupos }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Grupos de produtos
+    </button>
+    <button onClick="{{ goUnidades }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.unidades }}; color:{{ navFg.unidades }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/><path d="m4.5 13.5 2 2"/></svg>
+      Unidades
+    </button>
+    <button onClick="{{ goFormas }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.formas }}; color:{{ navFg.formas }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Formas de pagamento
+    </button>
+
+    <div style="color:#565d70; font-size:10.5px; font-weight:700; letter-spacing:0.8px; padding:14px 10px 4px;">OPERAÇÃO</div>
+    <button onClick="{{ goEstoque }}" style="display:flex; align-items:center; gap:11px; padding:9px 10px; border:none; border-radius:9px; cursor:pointer; text-align:left; font-size:13.5px; font-weight:600; width:100%; background:{{ navBg.estoque }}; color:{{ navFg.estoque }};">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9 5 3h14l2 6"/><path d="M9 13h6"/></svg>
+      Controle de estoque
+    </button>
+
+    <div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:10px; border-radius:11px; background:#20232f;">
+      <div style="width:32px; height:32px; border-radius:50%; background:#5865f2; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;">RC</div>
+      <div style="line-height:1.3; min-width:0;">
+        <div style="color:#fff; font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Roberto Campos</div>
+        <div style="color:#6c7385; font-size:11px; font-weight:600;">Administrador</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main style="flex:1; display:flex; flex-direction:column; min-width:0;">
+    <header style="height:62px; flex-shrink:0; background:#fff; border-bottom:1px solid #e5e8ee; display:flex; align-items:center; gap:16px; padding:0 24px; position:relative;">
+      <div style="min-width:0;">
+        <div style="font-size:16px; font-weight:800; letter-spacing:-0.3px; line-height:1.2;">{{ pageTitle }}</div>
+        <div style="font-size:12px; color:#7b8290; font-weight:600;">{{ pageSubtitle }}</div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; align-items:center; background:#f2f4f8; border:1px solid #e5e8ee; border-radius:9px; padding:0 12px; height:38px; width:280px; max-width:34vw;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a0af" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Buscar..." style="border:none; background:transparent; outline:none; padding:0 8px; font-size:13.5px; width:100%; color:#16181d;"/>
+      </div>
+      <button style="width:38px; height:38px; border-radius:9px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </header>
+
+    <div style="flex:1; overflow:auto; position:relative;">
+
+      <!-- ========= DASHBOARD ========= -->
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #d9dee7; border-radius:13px; padding:11px 15px; margin-bottom:16px; box-shadow:0 2px 6px rgba(20,24,40,.06); flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:11px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:#eceeff; color:#5865f2; display:flex; align-items:center; justify-content:center;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+            <div>
+              <div style="font-size:14px; font-weight:800; color:#22262f; line-height:1.2;">Configuração do painel</div>
+              <div style="font-size:12px; color:#7b8290; font-weight:600;">{{ editHint }}</div>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+          <span style="font-size:11px; font-weight:800; padding:4px 11px; border-radius:20px; background:{{ permBadgeBg }}; color:{{ permBadgeFg }};">{{ permBadgeText }}</span>
+          <div style="display:flex; align-items:center; gap:9px; background:#f4f6fa; border:1px solid #e5e8ee; border-radius:9px; padding:6px 11px;">
+            <span style="font-size:12px; font-weight:700; color:#5a6270;">Permissão</span>
+            <button onClick="{{ togglePerm }}" style="width:38px; height:22px; border-radius:20px; border:none; cursor:pointer; padding:0; position:relative; background:{{ permSwitchBg }}; transition:background .15s;"><span style="position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .15s; transform:{{ permKnob }};"></span></button>
+          </div>
+          <button onClick="{{ toggleEdit }}" style="display:flex; align-items:center; gap:7px; border:none; border-radius:10px; padding:9px 15px; font-size:13px; font-weight:700; background:{{ editBtnBg }}; color:{{ editBtnFg }}; cursor:{{ editBtnCursor }};">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            {{ editBtnLabel }}
+          </button>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="3">
+              <div style="background:#fff; border:1px solid #e5e8ee; border-radius:13px; padding:14px 16px; min-width:170px; box-shadow:0 1px 2px rgba(20,24,40,.04);">
+                <div style="font-size:12px; color:#7b8290; font-weight:700;">{{ k.label }}</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:23px; font-weight:700; margin-top:4px; letter-spacing:-0.5px;">{{ k.value }}</div>
+                <div style="font-size:11.5px; font-weight:700; margin-top:3px; color:{{ k.deltaColor }};">{{ k.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="font-size:13.5px; font-weight:700; color:#4a5160;">Meu quadro</div>
+        </div>
+
+        <div style="display:flex; gap:16px; align-items:flex-start; overflow-x:auto; padding-bottom:10px;">
+          <sc-for list="{{ board }}" as="col" hint-placeholder-count="3">
+            <div onDragOver="{{ onColDragOver }}" onDrop="{{ onColDrop }}" onDragLeave="{{ onColDragLeave }}" data-col="{{ col.id }}" style="width:296px; flex-shrink:0; background:{{ col.bg }}; border:1.5px dashed {{ col.border }}; border-radius:14px; padding:12px; transition:background .15s;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 4px 12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="width:8px; height:8px; border-radius:50%; background:{{ col.dot }};"></span>
+                  <span style="font-size:13px; font-weight:800; color:#2b303c;">{{ col.title }}</span>
+                  <span style="font-size:11px; font-weight:700; color:#8b93a2; background:#eceff4; border-radius:20px; padding:1px 8px;">{{ col.count }}</span>
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="2">
+                  <div draggable="true" onDragStart="{{ onCardDragStart }}" onDragEnd="{{ onCardDragEnd }}" data-col="{{ c.colId }}" data-card="{{ c.id }}" style="position:relative; background:#fff; border:1px solid #d3d9e4; border-radius:11px; padding:13px; box-shadow:0 2px 6px rgba(20,24,40,.07), 0 0 0 1px rgba(20,24,40,.02); cursor:grab; animation:popIn .2s ease;">
+                    <sc-if value="{{ c.editMode }}" hint-placeholder-val="{{ false }}">
+                      <button draggable="false" onClick="{{ c.onRemove }}" style="position:absolute; top:7px; right:7px; width:22px; height:22px; border-radius:6px; border:none; background:#fbe9e9; color:#d64545; cursor:pointer; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; z-index:3;" style-hover="background:#f6d5d5;">✕</button>
+                    </sc-if>
+                    <!-- metric -->
+                    <sc-if value="{{ c.isMetric }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                        <div style="font-size:12px; color:#7b8290; font-weight:700;">{{ c.label }}</div>
+                        <span style="font-size:11px; font-weight:800; color:{{ c.deltaColor }};">{{ c.deltaArrow }} {{ c.deltaFmt }}</span>
+                      </div>
+                      <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; margin-top:6px; letter-spacing:-0.5px;">{{ c.value }}</div>
+                    </sc-if>
+                    <!-- progress -->
+                    <sc-if value="{{ c.isProgress }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:12.5px; color:#4a5160; font-weight:700;">{{ c.label }}</div>
+                      <div style="font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700; margin:6px 0 8px;">{{ c.pctFmt }}</div>
+                      <div style="height:8px; background:#eceff4; border-radius:20px; overflow:hidden;"><div style="height:100%; width:{{ c.pct }}; background:{{ c.color }}; border-radius:20px;"></div></div>
+                      <div style="font-size:11px; color:#8b93a2; font-weight:600; margin-top:7px;">{{ c.sub }}</div>
+                    </sc-if>
+                    <!-- bars -->
+                    <sc-if value="{{ c.isBars }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:12.5px; color:#4a5160; font-weight:700;">{{ c.title }}</div>
+                        <div style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700;">{{ c.value }}</div>
+                      </div>
+                      <div style="display:flex; align-items:flex-end; gap:6px; height:56px; margin-top:12px;">
+                        <sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="7">
+                          <div style="flex:1; height:{{ b.h }}; background:{{ b.color }}; border-radius:4px 4px 2px 2px;"></div>
+                        </sc-for>
+                      </div>
+                      <div style="font-size:10.5px; color:#a2a9b6; font-weight:600; margin-top:7px;">{{ c.label }}</div>
+                    </sc-if>
+                    <!-- list -->
+                    <sc-if value="{{ c.isList }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:12.5px; color:#4a5160; font-weight:700; margin-bottom:10px;">{{ c.title }}</div>
+                      <div style="display:flex; flex-direction:column; gap:8px;">
+                        <sc-for list="{{ c.items }}" as="it" hint-placeholder-count="3">
+                          <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:8px;"><span style="width:7px; height:7px; border-radius:50%; background:{{ it.tone }};"></span><span style="font-size:12.5px; font-weight:600; color:#3a404d;">{{ it.label }}</span></div>
+                            <span style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:{{ it.tone }};">{{ it.value }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ col.editMode }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:10px; position:relative;">
+                  <button onClick="{{ col.onAddOpen }}" style="width:100%; padding:9px; border:1.5px dashed #c2c9d6; background:transparent; border-radius:10px; color:#6a7180; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;" style-hover="border-color:#5865f2; color:#5865f2;">+ Adicionar card</button>
+                  <sc-if value="{{ col.addMenuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute; top:44px; left:0; right:0; background:#fff; border:1px solid #e2e6ee; border-radius:11px; box-shadow:0 12px 30px rgba(20,24,40,.16); padding:6px; z-index:6; display:flex; flex-direction:column; gap:2px; animation:popIn .15s ease;">
+                      <sc-for list="{{ col.addTypes }}" as="t" hint-placeholder-count="4">
+                        <button onClick="{{ t.onPick }}" style="display:flex; align-items:center; gap:10px; padding:9px 10px; border:none; background:transparent; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; color:#3a404d; text-align:left; width:100%;" style-hover="background:#f2f4f8;"><span style="color:#5865f2; font-size:14px;">{{ t.icon }}</span>{{ t.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= PDV ========= -->
+      <sc-if value="{{ isPdv }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; height:100%; min-height:0;">
+        <!-- left: products -->
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0; padding:18px 20px; overflow:auto;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <sc-for list="{{ pdvChips }}" as="ch" hint-placeholder-count="5">
+              <button onClick="{{ ch.onClick }}" style="border:1px solid {{ ch.border }}; background:{{ ch.bg }}; color:{{ ch.fg }}; border-radius:20px; padding:6px 14px; font-size:12.5px; font-weight:700; cursor:pointer;">{{ ch.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;">
+            <sc-for list="{{ pdvProdutos }}" as="p" hint-placeholder-count="8">
+              <button onClick="{{ p.onAdd }}" style="text-align:left; background:#fff; border:1px solid #e5e8ee; border-radius:12px; padding:13px; cursor:pointer; display:flex; flex-direction:column; gap:6px; box-shadow:0 1px 2px rgba(20,24,40,.04);" style-hover="border-color:#5865f2; box-shadow:0 4px 12px rgba(88,101,242,.14);">
+                <div style="height:58px; border-radius:8px; background:{{ p.tint }}; display:flex; align-items:center; justify-content:center; color:{{ p.grupoCor }}; font-weight:800; font-size:11px;">{{ p.grupoNome }}</div>
+                <div style="font-size:13px; font-weight:700; line-height:1.25; color:#22262f;">{{ p.nome }}</div>
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#1f9d6b;">{{ p.preco }}</span>
+                  <span style="font-size:10.5px; font-weight:700; color:#98a0af;">{{ p.estoque }}</span>
+                </div>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- right: cart -->
+        <div style="width:360px; flex-shrink:0; background:#fff; border-left:1px solid #e5e8ee; display:flex; flex-direction:column;">
+          <div style="padding:16px 18px; border-bottom:1px solid #eef0f4;">
+            <button onClick="{{ openClienteSelect }}" style="width:100%; display:flex; align-items:center; gap:11px; background:#f7f8fb; border:1px solid #e5e8ee; border-radius:11px; padding:10px 12px; cursor:pointer; text-align:left;" style-hover="border-color:#c9cfda;">
+              <div style="width:34px; height:34px; border-radius:9px; background:#eceeff; display:flex; align-items:center; justify-content:center; color:#5865f2;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:11px; color:#8b93a2; font-weight:700;">Cliente</div>
+                <div style="font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#22262f;">{{ pdvClienteNome }}</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a0af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+
+          <div style="flex:1; overflow:auto; padding:6px 12px;">
+            <sc-if value="{{ pdvEmpty }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#b3bac6; gap:12px; padding:40px 20px; text-align:center;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <div style="font-size:13px; font-weight:600;">Nenhum item no carrinho.<br/>Toque em um produto para adicionar.</div>
+              </div>
+            </sc-if>
+            <sc-for list="{{ pdvCart }}" as="i" hint-placeholder-count="0">
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 6px; border-bottom:1px solid #f2f4f8;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#22262f;">{{ i.nome }}</div>
+                  <div style="font-size:11.5px; color:#8b93a2; font-weight:600;">{{ i.precoUnit }} un</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button onClick="{{ i.onDec }}" style="width:26px; height:26px; border-radius:7px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; font-size:16px; font-weight:700; color:#5a6270; line-height:1;">−</button>
+                  <span style="font-family:'JetBrains Mono',monospace; width:26px; text-align:center; font-size:13.5px; font-weight:700;">{{ i.qty }}</span>
+                  <button onClick="{{ i.onInc }}" style="width:26px; height:26px; border-radius:7px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; font-size:16px; font-weight:700; color:#5a6270; line-height:1;">+</button>
+                </div>
+                <div style="width:74px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700;">{{ i.subtotal }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border-top:1px solid #eef0f4; padding:16px 18px; background:#fbfcfd;">
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:#6a7180; font-weight:600; margin-bottom:6px;"><span>Subtotal ({{ pdvItemCount }} itens)</span><span style="font-family:'JetBrains Mono',monospace;">{{ pdvSubtotal }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:#6a7180; font-weight:600; margin-bottom:12px;"><span>Desconto</span><span style="font-family:'JetBrains Mono',monospace; color:#d64545;">{{ pdvDesconto }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;"><span style="font-size:15px; font-weight:800;">Total</span><span style="font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:#1f9d6b; letter-spacing:-0.5px;">{{ pdvTotal }}</span></div>
+            <button onClick="{{ openPay }}" disabled="{{ pdvEmpty }}" style="width:100%; height:48px; border:none; border-radius:11px; background:{{ payBtnBg }}; color:#fff; font-size:15px; font-weight:800; cursor:{{ payBtnCursor }}; display:flex; align-items:center; justify-content:center; gap:9px;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Finalizar venda
+            </button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= PEDIDOS ========= -->
+      <sc-if value="{{ isPedidos }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <sc-for list="{{ pedidoChips }}" as="ch" hint-placeholder-count="5">
+              <button onClick="{{ ch.onClick }}" style="border:1px solid {{ ch.border }}; background:{{ ch.bg }}; color:{{ ch.fg }}; border-radius:20px; padding:6px 14px; font-size:12.5px; font-weight:700; cursor:pointer;">{{ ch.label }}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <button onClick="{{ novoPedido }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Novo pedido</button>
+        </div>
+        <div style="background:#fff; border:1px solid #d9dee7; border-radius:14px; overflow:hidden; box-shadow:0 2px 6px rgba(20,24,40,.05);">
+          <div style="display:grid; grid-template-columns:96px 2fr 1fr 1fr 140px 74px 96px; padding:12px 18px; background:#f7f8fb; border-bottom:1px solid #eef0f4; font-size:11px; font-weight:800; color:#8b93a2; letter-spacing:0.4px;">
+            <div>PEDIDO</div><div>CLIENTE</div><div style="text-align:center;">ITENS</div><div style="text-align:right;">TOTAL</div><div style="text-align:center;">STATUS</div><div style="text-align:center;">DATA</div><div></div>
+          </div>
+          <sc-for list="{{ pedidosView }}" as="o" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns:96px 2fr 1fr 1fr 140px 74px 96px; padding:13px 18px; border-bottom:1px solid #f2f4f8; align-items:center; font-size:13px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#5865f2;">{{ o.numero }}</div>
+              <div style="display:flex; align-items:center; gap:10px; min-width:0;"><div style="width:30px; height:30px; border-radius:50%; background:{{ o.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; flex-shrink:0;">{{ o.initials }}</div><div style="font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ o.clienteNome }}</div></div>
+              <div style="text-align:center; color:#5a6270; font-weight:600;">{{ o.itens }}</div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#22262f;">{{ o.total }}</div>
+              <div style="text-align:center;"><span style="display:inline-block; font-size:11px; font-weight:800; padding:4px 11px; border-radius:20px; background:{{ o.statusTint }}; color:{{ o.statusCor }};">{{ o.status }}</span></div>
+              <div style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:#98a0af;">{{ o.data }}</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px;">
+                <button onClick="{{ o.onAdvance }}" title="Avançar status" style="width:30px; height:30px; border-radius:8px; border:1px solid #d7f0e4; background:#f1faf5; cursor:{{ o.advCursor }}; opacity:{{ o.advOpacity }}; display:flex; align-items:center; justify-content:center; color:#1f9d6b;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <button onClick="{{ o.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                <button onClick="{{ o.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= CLIENTES ========= -->
+      <sc-if value="{{ isClientes }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><button onClick="{{ novoCliente }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Novo cliente</button></div>
+        <div style="background:#fff; border:1px solid #e5e8ee; border-radius:14px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:2fr 1.3fr 1.3fr 1fr 1fr 84px; padding:12px 18px; background:#f7f8fb; border-bottom:1px solid #eef0f4; font-size:11px; font-weight:800; color:#8b93a2; letter-spacing:0.4px;">
+            <div>CLIENTE</div><div>DOCUMENTO</div><div>TELEFONE</div><div>CIDADE</div><div style="text-align:right;">TOTAL COMPRAS</div><div></div>
+          </div>
+          <sc-for list="{{ clientesView }}" as="c" hint-placeholder-count="6">
+            <div style="display:grid; grid-template-columns:2fr 1.3fr 1.3fr 1fr 1fr 84px; padding:13px 18px; border-bottom:1px solid #f2f4f8; align-items:center; font-size:13px;">
+              <div style="display:flex; align-items:center; gap:11px; min-width:0;"><div style="width:34px; height:34px; border-radius:50%; background:{{ c.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">{{ c.initials }}</div><div style="min-width:0;"><div style="font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.nome }}</div><div style="font-size:11.5px; color:#98a0af; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.email }}</div></div></div>
+              <div style="font-family:'JetBrains Mono',monospace; color:#5a6270; font-size:12px;">{{ c.documento }}</div>
+              <div style="color:#5a6270;">{{ c.telefone }}</div>
+              <div style="color:#5a6270;">{{ c.cidade }}</div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#22262f;">{{ c.compras }}</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px;">
+                <button onClick="{{ c.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                <button onClick="{{ c.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= PRODUTOS ========= -->
+      <sc-if value="{{ isProdutos }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><button onClick="{{ novoProduto }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Novo produto</button></div>
+        <div style="background:#fff; border:1px solid #e5e8ee; border-radius:14px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:100px 2fr 1.2fr 80px 1fr 90px 84px; padding:12px 18px; background:#f7f8fb; border-bottom:1px solid #eef0f4; font-size:11px; font-weight:800; color:#8b93a2; letter-spacing:0.4px;">
+            <div>SKU</div><div>PRODUTO</div><div>GRUPO</div><div>UN.</div><div style="text-align:right;">PREÇO</div><div style="text-align:right;">ESTOQUE</div><div></div>
+          </div>
+          <sc-for list="{{ produtosView }}" as="p" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:100px 2fr 1.2fr 80px 1fr 90px 84px; padding:13px 18px; border-bottom:1px solid #f2f4f8; align-items:center; font-size:13px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#98a0af;">{{ p.sku }}</div>
+              <div style="font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.nome }}</div>
+              <div><span style="display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; background:{{ p.grupoTint }}; color:{{ p.grupoCor }};">{{ p.grupoNome }}</span></div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#5a6270;">{{ p.unidade }}</div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#22262f;">{{ p.preco }}</div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:{{ p.estColor }};">{{ p.estoque }}</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px;">
+                <button onClick="{{ p.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                <button onClick="{{ p.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= GRUPOS ========= -->
+      <sc-if value="{{ isGrupos }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><button onClick="{{ novoGrupo }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Novo grupo</button></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;">
+          <sc-for list="{{ gruposView }}" as="g" hint-placeholder-count="6">
+            <div style="background:#fff; border:1px solid #e5e8ee; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="width:44px; height:44px; border-radius:11px; background:{{ g.tint }}; display:flex; align-items:center; justify-content:center; color:{{ g.cor }};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+                <div style="display:flex; gap:4px;">
+                  <button onClick="{{ g.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                  <button onClick="{{ g.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:15px; font-weight:800; color:#22262f;">{{ g.nome }}</div>
+                <div style="font-size:12.5px; color:#8b93a2; font-weight:600; margin-top:2px;">{{ g.count }} produtos</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= UNIDADES ========= -->
+      <sc-if value="{{ isUnidades }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><button onClick="{{ novaUnidade }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Nova unidade</button></div>
+        <div style="background:#fff; border:1px solid #e5e8ee; border-radius:14px; overflow:hidden; max-width:640px;">
+          <div style="display:grid; grid-template-columns:120px 1fr 84px; padding:12px 18px; background:#f7f8fb; border-bottom:1px solid #eef0f4; font-size:11px; font-weight:800; color:#8b93a2; letter-spacing:0.4px;"><div>SIGLA</div><div>DESCRIÇÃO</div><div></div></div>
+          <sc-for list="{{ unidadesView }}" as="u" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns:120px 1fr 84px; padding:13px 18px; border-bottom:1px solid #f2f4f8; align-items:center; font-size:13px;">
+              <div><span style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; background:#eef0f7; color:#4a5160; padding:3px 10px; border-radius:7px;">{{ u.sigla }}</span></div>
+              <div style="font-weight:600; color:#3a404d;">{{ u.nome }}</div>
+              <div style="display:flex; justify-content:flex-end; gap:4px;">
+                <button onClick="{{ u.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                <button onClick="{{ u.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= FORMAS DE PAGAMENTO ========= -->
+      <sc-if value="{{ isFormas }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><button onClick="{{ novaForma }}" style="display:flex; align-items:center; gap:8px; background:#5865f2; color:#fff; border:none; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#4753e0;"><span style="font-size:17px; line-height:1;">+</span> Nova forma de pagamento</button></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;">
+          <sc-for list="{{ formasView }}" as="f" hint-placeholder-count="5">
+            <div style="background:#fff; border:1px solid #d9dee7; border-radius:14px; padding:16px; box-shadow:0 2px 6px rgba(20,24,40,.05); display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:46px; height:46px; border-radius:12px; background:{{ f.tint }}; display:flex; align-items:center; justify-content:center; font-size:22px;">{{ f.icon }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:15px; font-weight:800; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ f.nome }}</div>
+                  <div style="font-size:12px; font-weight:700; color:{{ f.cor }};">{{ f.tipo }}</div>
+                </div>
+                <span style="font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; background:{{ f.ativoTint }}; color:{{ f.ativoCor }};">{{ f.ativoLabel }}</span>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <div style="flex:1; background:#f7f8fb; border-radius:9px; padding:9px 11px;"><div style="font-size:10.5px; font-weight:700; color:#98a0af; letter-spacing:0.3px;">TAXA</div><div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#22262f; margin-top:2px;">{{ f.taxaFmt }}</div></div>
+                <div style="flex:1; background:#f7f8fb; border-radius:9px; padding:9px 11px;"><div style="font-size:10.5px; font-weight:700; color:#98a0af; letter-spacing:0.3px;">RECEBIMENTO</div><div style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:#22262f; margin-top:2px;">{{ f.prazoFmt }}</div></div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; border-top:1px solid #f2f4f8; padding-top:12px;">
+                <span style="font-size:12px; font-weight:700; color:#5a6270;">Aceitar</span>
+                <button onClick="{{ f.onToggle }}" style="width:38px; height:22px; border-radius:20px; border:none; cursor:pointer; padding:0; position:relative; background:{{ f.switchBg }}; transition:background .15s;"><span style="position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .15s; transform:{{ f.switchKnob }};"></span></button>
+                <div style="flex:1;"></div>
+                <button onClick="{{ f.onEdit }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5a6270;" style-hover="background:#f2f4f8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>
+                <button onClick="{{ f.onDelete }}" style="width:30px; height:30px; border-radius:8px; border:1px solid #f3d6d6; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#d64545;" style-hover="background:#fdf0f0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========= ESTOQUE ========= -->
+      <sc-if value="{{ isEstoque }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 24px;">
+        <div style="display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+          <sc-for list="{{ estoqueResumo }}" as="r" hint-placeholder-count="3">
+            <div style="flex:1; min-width:180px; background:#fff; border:1px solid #e5e8ee; border-radius:13px; padding:15px 17px; display:flex; align-items:center; gap:13px;">
+              <div style="width:42px; height:42px; border-radius:11px; background:{{ r.tint }}; color:{{ r.cor }}; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px;">{{ r.count }}</div>
+              <div><div style="font-size:13px; font-weight:700; color:#22262f;">{{ r.label }}</div><div style="font-size:11.5px; color:#8b93a2; font-weight:600;">{{ r.sub }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff; border:1px solid #e5e8ee; border-radius:14px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:2fr 1fr 90px 90px 1fr 150px; padding:12px 18px; background:#f7f8fb; border-bottom:1px solid #eef0f4; font-size:11px; font-weight:800; color:#8b93a2; letter-spacing:0.4px;"><div>PRODUTO</div><div>GRUPO</div><div style="text-align:right;">MÍNIMO</div><div style="text-align:right;">ATUAL</div><div style="text-align:center;">STATUS</div><div style="text-align:center;">AJUSTE</div></div>
+          <sc-for list="{{ estoqueView }}" as="p" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:2fr 1fr 90px 90px 1fr 150px; padding:12px 18px; border-bottom:1px solid #f2f4f8; align-items:center; font-size:13px;">
+              <div style="font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.nome }}</div>
+              <div><span style="display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; background:{{ p.grupoTint }}; color:{{ p.grupoCor }};">{{ p.grupoNome }}</span></div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; color:#98a0af;">{{ p.estoqueMin }}</div>
+              <div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:{{ p.estColor }};">{{ p.estoque }}</div>
+              <div style="text-align:center;"><span style="display:inline-block; font-size:11px; font-weight:800; padding:4px 11px; border-radius:20px; background:{{ p.statusTint }}; color:{{ p.statusCor }};">{{ p.status }}</span></div>
+              <div style="display:flex; justify-content:center; gap:6px;">
+                <button onClick="{{ p.onDec }}" style="width:32px; height:32px; border-radius:8px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:#5a6270; line-height:1;">−</button>
+                <button onClick="{{ p.onInc }}" style="width:32px; height:32px; border-radius:8px; border:1px solid #d7f0e4; background:#f1faf5; cursor:pointer; font-size:18px; font-weight:700; color:#1f9d6b; line-height:1;">+</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </main>
+
+  <!-- ============ MODAL (form + cliente select) ============ -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; background:rgba(20,22,32,.42); display:flex; align-items:center; justify-content:center; z-index:50; animation:fadeIn .15s ease; padding:20px;">
+      <div onClick="{{ stop }}" style="width:{{ modalWidth }}; max-width:100%; max-height:90vh; overflow:auto; background:#fff; border-radius:16px; box-shadow:0 24px 60px rgba(20,22,40,.28); animation:popIn .2s ease;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #eef0f4;">
+          <div style="font-size:16px; font-weight:800;">{{ modalTitle }}</div>
+          <button onClick="{{ closeModal }}" style="width:32px; height:32px; border-radius:8px; border:none; background:#f2f4f8; cursor:pointer; color:#5a6270; font-size:16px;">✕</button>
+        </div>
+
+        <!-- cliente select list -->
+        <sc-if value="{{ isSelectCliente }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:10px 14px 16px;">
+            <button onClick="{{ selectClienteAvulso }}" style="width:100%; text-align:left; padding:12px 14px; border:1px dashed #d7dbe4; border-radius:10px; background:#fbfcfd; cursor:pointer; font-size:13.5px; font-weight:700; color:#5a6270; margin-bottom:8px;">Consumidor não identificado</button>
+            <sc-for list="{{ clienteOptions }}" as="c" hint-placeholder-count="4">
+              <button onClick="{{ c.onPick }}" style="width:100%; display:flex; align-items:center; gap:11px; text-align:left; padding:10px 12px; border:1px solid #eef0f4; border-radius:10px; background:#fff; cursor:pointer; margin-bottom:6px;" style-hover="border-color:#5865f2; background:#fafbff;">
+                <div style="width:34px; height:34px; border-radius:50%; background:{{ c.avatarBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;">{{ c.initials }}</div>
+                <div><div style="font-size:13.5px; font-weight:700; color:#22262f;">{{ c.nome }}</div><div style="font-size:11.5px; color:#98a0af; font-weight:600;">{{ c.documento }}</div></div>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- forms -->
+        <sc-if value="{{ isForm }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px 22px; display:flex; flex-direction:column; gap:14px;">
+          <!-- cliente -->
+          <sc-if value="{{ formCliente }}" hint-placeholder-val="{{ false }}">
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Nome / Razão social</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">CPF / CNPJ</label><input value="{{ form.documento }}" data-field="documento" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Telefone</label><input value="{{ form.telefone }}" data-field="telefone" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">E-mail</label><input value="{{ form.email }}" data-field="email" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Cidade</label><input value="{{ form.cidade }}" data-field="cidade" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+          </sc-if>
+          <!-- produto -->
+          <sc-if value="{{ formProduto }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Nome do produto</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="width:120px;"><label style="font-size:12px; font-weight:700; color:#5a6270;">SKU</label><input value="{{ form.sku }}" data-field="sku" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div></div>
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Grupo</label><select value="{{ form.grupoId }}" data-field="grupoId" onChange="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><sc-for list="{{ grupoOptions }}" as="g" hint-placeholder-count="4"><option value="{{ g.id }}">{{ g.nome }}</option></sc-for></select></div><div style="width:120px;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Unidade</label><select value="{{ form.unidade }}" data-field="unidade" onChange="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><sc-for list="{{ unidadeOptions }}" as="u" hint-placeholder-count="4"><option value="{{ u.sigla }}">{{ u.sigla }}</option></sc-for></select></div></div>
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Preço (R$)</label><input value="{{ form.preco }}" data-field="preco" onInput="{{ onField }}" type="number" step="0.01" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Estoque atual</label><input value="{{ form.estoque }}" data-field="estoque" onInput="{{ onField }}" type="number" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Estoque mín.</label><input value="{{ form.estoqueMin }}" data-field="estoqueMin" onInput="{{ onField }}" type="number" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div></div>
+          </sc-if>
+          <!-- grupo -->
+          <sc-if value="{{ formGrupo }}" hint-placeholder-val="{{ false }}">
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Nome do grupo</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Cor</label><div style="display:flex; gap:8px; margin-top:8px;"><sc-for list="{{ corOptions }}" as="co" hint-placeholder-count="6"><button onClick="{{ co.onPick }}" style="width:36px; height:36px; border-radius:9px; background:{{ co.cor }}; border:3px solid {{ co.ring }}; cursor:pointer;"></button></sc-for></div></div>
+          </sc-if>
+          <!-- unidade -->
+          <sc-if value="{{ formUnidade }}" hint-placeholder-val="{{ false }}">
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Sigla</label><input value="{{ form.sigla }}" data-field="sigla" onInput="{{ onField }}" style="width:120px; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none; text-transform:uppercase;"/></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Descrição</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+          </sc-if>
+          <!-- forma de pagamento -->
+          <sc-if value="{{ formForma }}" hint-placeholder-val="{{ false }}">
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Nome</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" placeholder="Ex: Cartão de crédito Visa" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Tipo</label><select value="{{ form.tipo }}" data-field="tipo" onChange="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><sc-for list="{{ formTipoOptions }}" as="tp" hint-placeholder-count="5"><option value="{{ tp }}">{{ tp }}</option></sc-for></select></div>
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Taxa (%)</label><input value="{{ form.taxa }}" data-field="taxa" onInput="{{ onField }}" type="number" step="0.1" placeholder="0" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Prazo de recebimento (dias)</label><input value="{{ form.prazo }}" data-field="prazo" onInput="{{ onField }}" type="number" placeholder="0" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div></div>
+            <div style="display:flex; align-items:center; gap:10px; background:#f7f8fb; border-radius:10px; padding:11px 13px;"><span style="font-size:13px; font-weight:700; color:#3a404d;">Forma ativa</span><span style="font-size:11.5px; color:#8b93a2; font-weight:600;">disponível no PDV</span><div style="flex:1;"></div><button onClick="{{ toggleFormAtivo }}" style="width:38px; height:22px; border-radius:20px; border:none; cursor:pointer; padding:0; position:relative; background:{{ formAtivoBg }}; transition:background .15s;"><span style="position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .15s; transform:{{ formAtivoKnob }};"></span></button></div>
+          </sc-if>
+          <!-- empresa -->
+          <sc-if value="{{ formEmpresa }}" hint-placeholder-val="{{ false }}">
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Nome da empresa</label><input value="{{ form.nome }}" data-field="nome" onInput="{{ onField }}" placeholder="Ex: Minha Loja LTDA" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div>
+            <div style="display:flex; gap:12px;"><div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">CNPJ</label><input value="{{ form.cnpj }}" data-field="cnpj" onInput="{{ onField }}" placeholder="00.000.000/0001-00" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 12px; font-size:14px; outline:none;"/></div><div style="width:150px;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Ramo</label><select value="{{ form.ramo }}" data-field="ramo" onChange="{{ onField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><sc-for list="{{ empresaRamoOptions }}" as="r" hint-placeholder-count="5"><option value="{{ r }}">{{ r }}</option></sc-for></select></div></div>
+            <div><label style="font-size:12px; font-weight:700; color:#5a6270;">Cor</label><div style="display:flex; gap:8px; margin-top:8px;"><sc-for list="{{ corOptions }}" as="co" hint-placeholder-count="6"><button onClick="{{ co.onPick }}" style="width:36px; height:36px; border-radius:9px; background:{{ co.cor }}; border:3px solid {{ co.ring }}; cursor:pointer;"></button></sc-for></div></div>
+          </sc-if>
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <button onClick="{{ closeModal }}" style="flex:1; height:44px; border:1px solid #dfe3ea; background:#fff; border-radius:10px; font-size:14px; font-weight:700; color:#5a6270; cursor:pointer;">Cancelar</button>
+            <button onClick="{{ saveModal }}" style="flex:1.4; height:44px; border:none; background:#5865f2; color:#fff; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer;" style-hover="background:#4753e0;">Salvar</button>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- pedido builder -->
+        <sc-if value="{{ isPedido }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:18px 22px; display:flex; flex-direction:column; gap:15px;">
+          <div style="display:flex; gap:12px;">
+            <div style="flex:1;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Cliente</label><select value="{{ pedidoForm.clienteId }}" data-field="clienteId" onChange="{{ onPedidoField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><option value="">Consumidor não identificado</option><sc-for list="{{ pedidoClienteOptions }}" as="c" hint-placeholder-count="4"><option value="{{ c.id }}">{{ c.nome }}</option></sc-for></select></div>
+            <div style="width:190px;"><label style="font-size:12px; font-weight:700; color:#5a6270;">Status</label><select value="{{ pedidoForm.status }}" data-field="status" onChange="{{ onPedidoField }}" style="width:100%; margin-top:6px; height:42px; border:1px solid #dfe3ea; border-radius:10px; padding:0 10px; font-size:14px; outline:none; background:#fff;"><sc-for list="{{ pedidoStatusOptions }}" as="st" hint-placeholder-count="5"><option value="{{ st }}">{{ st }}</option></sc-for></select></div>
+          </div>
+
+          <div style="display:flex; gap:14px;">
+            <!-- product picker -->
+            <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+              <label style="font-size:12px; font-weight:700; color:#5a6270; margin-bottom:6px;">Adicionar produtos</label>
+              <div style="display:flex; align-items:center; background:#f2f4f8; border:1px solid #e5e8ee; border-radius:9px; padding:0 10px; height:38px; margin-bottom:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#98a0af" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input value="{{ pedidoSearch }}" onInput="{{ onPedidoSearch }}" placeholder="Buscar produto..." style="border:none; background:transparent; outline:none; padding:0 8px; font-size:13px; width:100%;"/></div>
+              <div style="border:1px solid #eef0f4; border-radius:11px; max-height:220px; overflow:auto;">
+                <sc-for list="{{ pedidoProdutos }}" as="p" hint-placeholder-count="6">
+                  <div style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid #f4f6fa;">
+                    <div style="flex:1; min-width:0;"><div style="font-size:13px; font-weight:600; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.nome }}</div></div>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:#1f9d6b;">{{ p.preco }}</span>
+                    <button onClick="{{ p.onAdd }}" style="width:28px; height:28px; border-radius:7px; border:1px solid #d7f0e4; background:#f1faf5; cursor:pointer; font-size:16px; font-weight:700; color:#1f9d6b; line-height:1; flex-shrink:0;">+</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- items -->
+            <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+              <label style="font-size:12px; font-weight:700; color:#5a6270; margin-bottom:6px;">Itens do pedido ({{ pedidoCount }})</label>
+              <div style="border:1px solid #eef0f4; border-radius:11px; min-height:220px; max-height:220px; overflow:auto; background:#fbfcfd;">
+                <sc-if value="{{ pedidoEmpty }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex; align-items:center; justify-content:center; height:200px; color:#b3bac6; font-size:12.5px; font-weight:600; text-align:center; padding:20px;">Nenhum item.<br/>Adicione produtos ao pedido.</div>
+                </sc-if>
+                <sc-for list="{{ pedidoItemsView }}" as="i" hint-placeholder-count="0">
+                  <div style="display:flex; align-items:center; gap:8px; padding:9px 11px; border-bottom:1px solid #f4f6fa;">
+                    <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:700; color:#22262f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ i.nome }}</div><div style="font-size:11px; color:#98a0af; font-weight:600;">{{ i.subtotal }}</div></div>
+                    <button onClick="{{ i.onDec }}" style="width:24px; height:24px; border-radius:6px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; font-size:15px; font-weight:700; color:#5a6270; line-height:1;">−</button>
+                    <span style="font-family:'JetBrains Mono',monospace; width:22px; text-align:center; font-size:13px; font-weight:700;">{{ i.qty }}</span>
+                    <button onClick="{{ i.onInc }}" style="width:24px; height:24px; border-radius:6px; border:1px solid #e5e8ee; background:#fff; cursor:pointer; font-size:15px; font-weight:700; color:#5a6270; line-height:1;">+</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 15px; background:#f7f8fb; border-radius:11px;"><span style="font-size:14px; font-weight:800;">Total do pedido</span><span style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:#1f9d6b;">{{ pedidoTotal }}</span></div>
+          <div style="display:flex; gap:10px;">
+            <button onClick="{{ closeModal }}" style="flex:1; height:44px; border:1px solid #dfe3ea; background:#fff; border-radius:10px; font-size:14px; font-weight:700; color:#5a6270; cursor:pointer;">Cancelar</button>
+            <button onClick="{{ savePedido }}" style="flex:1.4; height:44px; border:none; background:#5865f2; color:#fff; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer;" style-hover="background:#4753e0;">Salvar pedido</button>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- payment -->
+        <sc-if value="{{ isPay }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px 22px;">
+          <sc-if value="{{ payDone }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center; padding:14px 0 4px;">
+              <div style="width:66px; height:66px; border-radius:50%; background:#e9f8f0; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1f9d6b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div style="font-size:19px; font-weight:800;">Venda concluída!</div>
+              <div style="font-size:13.5px; color:#7b8290; font-weight:600; margin-top:4px;">Total recebido <b style="color:#1f9d6b; font-family:'JetBrains Mono',monospace;">{{ pdvTotal }}</b> via {{ payMethodLabel }}</div>
+              <button onClick="{{ newSale }}" style="width:100%; height:46px; margin-top:20px; border:none; background:#5865f2; color:#fff; border-radius:11px; font-size:14.5px; font-weight:800; cursor:pointer;">Nova venda</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ payChoosing }}" hint-placeholder-val="{{ true }}">
+            <div style="text-align:center; margin-bottom:18px;"><div style="font-size:13px; color:#7b8290; font-weight:700;">Valor total</div><div style="font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:700; color:#1f9d6b; letter-spacing:-1px;">{{ pdvTotal }}</div></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+              <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="4">
+                <button onClick="{{ m.onPick }}" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:16px 10px; border:2px solid {{ m.border }}; background:{{ m.bg }}; border-radius:12px; cursor:pointer; font-size:13px; font-weight:700; color:{{ m.fg }};">
+                  <span style="font-size:22px; line-height:1;">{{ m.icon }}</span>{{ m.label }}
+                </button>
+              </sc-for>
+            </div>
+            <button onClick="{{ confirmPay }}" style="width:100%; height:48px; border:none; background:#1f9d6b; color:#fff; border-radius:11px; font-size:15px; font-weight:800; cursor:pointer;" style-hover="background:#1a8a5d;">Confirmar pagamento</button>
+          </sc-if>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ TOAST ============ -->
+  <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:#171922; color:#fff; padding:12px 20px; border-radius:11px; font-size:13.5px; font-weight:700; box-shadow:0 12px 30px rgba(0,0,0,.24); z-index:60; animation:slideUp .25s ease; display:flex; align-items:center; gap:9px;">
+      <span style="color:#5eead4;">✓</span>{{ toast }}
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    view: 'dashboard',
+    search: '',
+    empresas: [
+      { id: 'e1', nome: 'Mercado Central', cnpj: '12.345.678/0001-90', ramo: 'Varejo', cor: '#5865f2' },
+      { id: 'e2', nome: 'Lanchonete do Zé', cnpj: '98.765.432/0001-10', ramo: 'Alimentação', cor: '#1f9d6b' },
+      { id: 'e3', nome: 'Distribuidora Norte', cnpj: '45.678.901/0001-22', ramo: 'Atacado', cor: '#d98a24' },
+    ],
+    empresaId: 'e1',
+    empresaMenuOpen: false,
+    grupos: [
+      { id: 'g1', nome: 'Bebidas', cor: '#4b57d6' },
+      { id: 'g2', nome: 'Mercearia', cor: '#1f9d6b' },
+      { id: 'g3', nome: 'Limpeza', cor: '#d98a24' },
+      { id: 'g4', nome: 'Padaria', cor: '#c2557a' },
+      { id: 'g5', nome: 'Hortifruti', cor: '#2f9e8f' },
+      { id: 'g6', nome: 'Frios & Laticínios', cor: '#7d5bd6' },
+    ],
+    unidades: [
+      { id: 'u1', sigla: 'UN', nome: 'Unidade' },
+      { id: 'u2', sigla: 'KG', nome: 'Quilograma' },
+      { id: 'u3', sigla: 'CX', nome: 'Caixa' },
+      { id: 'u4', sigla: 'PCT', nome: 'Pacote' },
+      { id: 'u5', sigla: 'L', nome: 'Litro' },
+    ],
+    formas: [
+      { id: 'f1', nome: 'Dinheiro', tipo: 'Dinheiro', taxa: 0, prazo: 0, ativo: true },
+      { id: 'f2', nome: 'Pix', tipo: 'Pix', taxa: 0, prazo: 0, ativo: true },
+      { id: 'f3', nome: 'Cartão de débito', tipo: 'Cartão', taxa: 1.5, prazo: 1, ativo: true },
+      { id: 'f4', nome: 'Cartão de crédito', tipo: 'Cartão', taxa: 3.2, prazo: 30, ativo: true },
+      { id: 'f5', nome: 'Boleto bancário', tipo: 'Boleto', taxa: 0.9, prazo: 3, ativo: false },
+    ],
+    produtos: [
+      { id: 'p1', sku: '7891234', nome: 'Arroz Branco 5kg', grupoId: 'g2', unidade: 'PCT', preco: 27.90, estoque: 3, estoqueMin: 10 },
+      { id: 'p2', sku: '7891235', nome: 'Feijão Carioca 1kg', grupoId: 'g2', unidade: 'PCT', preco: 8.49, estoque: 42, estoqueMin: 15 },
+      { id: 'p3', sku: '7891236', nome: 'Refrigerante Cola 2L', grupoId: 'g1', unidade: 'UN', preco: 9.90, estoque: 64, estoqueMin: 20 },
+      { id: 'p4', sku: '7891237', nome: 'Água Mineral 500ml', grupoId: 'g1', unidade: 'UN', preco: 2.50, estoque: 128, estoqueMin: 40 },
+      { id: 'p5', sku: '7891238', nome: 'Detergente Neutro 500ml', grupoId: 'g3', unidade: 'UN', preco: 2.99, estoque: 6, estoqueMin: 12 },
+      { id: 'p6', sku: '7891239', nome: 'Sabão em Pó 1kg', grupoId: 'g3', unidade: 'PCT', preco: 14.90, estoque: 22, estoqueMin: 10 },
+      { id: 'p7', sku: '7891240', nome: 'Pão Francês', grupoId: 'g4', unidade: 'KG', preco: 15.90, estoque: 8, estoqueMin: 5 },
+      { id: 'p8', sku: '7891241', nome: 'Café Torrado 500g', grupoId: 'g2', unidade: 'PCT', preco: 18.90, estoque: 9, estoqueMin: 10 },
+      { id: 'p9', sku: '7891242', nome: 'Banana Prata', grupoId: 'g5', unidade: 'KG', preco: 6.90, estoque: 34, estoqueMin: 8 },
+      { id: 'p10', sku: '7891243', nome: 'Queijo Mussarela', grupoId: 'g6', unidade: 'KG', preco: 44.90, estoque: 15, estoqueMin: 5 },
+      { id: 'p11', sku: '7891244', nome: 'Leite Integral 1L', grupoId: 'g6', unidade: 'UN', preco: 5.49, estoque: 52, estoqueMin: 20 },
+      { id: 'p12', sku: '7891245', nome: 'Óleo de Soja 900ml', grupoId: 'g2', unidade: 'UN', preco: 7.90, estoque: 18, estoqueMin: 10 },
+    ],
+    clientes: [
+      { id: 'c1', nome: 'Maria Oliveira', documento: '123.456.789-00', telefone: '(11) 98877-1122', email: 'maria.oliveira@email.com', cidade: 'São Paulo', compras: 2480.50 },
+      { id: 'c2', nome: 'João Santos', documento: '987.654.321-00', telefone: '(11) 97766-3344', email: 'joao.santos@email.com', cidade: 'Guarulhos', compras: 1120.00 },
+      { id: 'c3', nome: 'Mercado Silva ME', documento: '12.345.678/0001-90', telefone: '(11) 3344-5566', email: 'contato@mercadosilva.com', cidade: 'Osasco', compras: 8940.30 },
+      { id: 'c4', nome: 'Ana Costa', documento: '456.789.123-00', telefone: '(11) 96655-2211', email: 'ana.costa@email.com', cidade: 'São Paulo', compras: 640.90 },
+      { id: 'c5', nome: 'Bar do Zé LTDA', documento: '98.765.432/0001-10', telefone: '(11) 2233-4455', email: 'financeiro@bardoze.com', cidade: 'Santo André', compras: 3210.00 },
+      { id: 'c6', nome: 'Pedro Almeida', documento: '321.654.987-00', telefone: '(11) 95544-8877', email: 'pedro.almeida@email.com', cidade: 'Diadema', compras: 415.20 },
+    ],
+    columns: [
+      { id: 'col1', title: 'Indicadores', cards: [
+        { id: 'k1', type: 'metric', label: 'Vendas hoje', value: 4820.50, money: true, delta: 12.4, deltaUp: true },
+        { id: 'k2', type: 'metric', label: 'Pedidos hoje', value: 38, money: false, delta: 5, deltaUp: true },
+        { id: 'k3', type: 'metric', label: 'Ticket médio', value: 126.80, money: true, delta: -2.1, deltaUp: false },
+        { id: 'k4', type: 'metric', label: 'Itens vendidos hoje', value: 214, money: false, delta: 9.8, deltaUp: true },
+      ]},
+      { id: 'col2', title: 'Operação', cards: [
+        { id: 'b1', type: 'bars', title: 'Vendas na semana', value: 'R$ 28.940', bars: [40, 62, 50, 80, 72, 96, 88], label: 'seg → dom' },
+        { id: 'pr1', type: 'progress', label: 'Meta mensal', pct: 72, color: '#4b57d6', sub: 'R$ 72.400 de R$ 100.000' },
+        { id: 'b2', type: 'bars', title: 'Ticket médio (7d)', value: 'R$ 118', bars: [60, 55, 70, 65, 80, 90, 84], label: 'seg → dom' },
+        { id: 'pr2', type: 'progress', label: 'Satisfação (CSAT)', pct: 88, color: '#1f9d6b', sub: '440 avaliações positivas' },
+      ]},
+      { id: 'col3', title: 'Acompanhar', cards: [
+        { id: 'l1', type: 'list', title: 'Estoque baixo', items: [
+          { label: 'Detergente Neutro', value: '6 un', tone: 'danger' },
+          { label: 'Arroz Branco 5kg', value: '3 un', tone: 'danger' },
+          { label: 'Café Torrado 500g', value: '9 un', tone: 'warn' },
+        ]},
+        { id: 'l2', type: 'list', title: 'Contas a receber', items: [
+          { label: 'Mercado Silva ME', value: 'R$ 540', tone: 'default' },
+          { label: 'Bar do Zé LTDA', value: 'R$ 320', tone: 'default' },
+        ]},
+        { id: 'l3', type: 'list', title: 'Mais vendidos', items: [
+          { label: 'Água Mineral 500ml', value: '82 un', tone: 'default' },
+          { label: 'Refrigerante Cola 2L', value: '54 un', tone: 'default' },
+          { label: 'Pão Francês', value: '31 kg', tone: 'default' },
+        ]},
+        { id: 'k5', type: 'metric', label: 'A receber (total)', value: 860, money: true, delta: 4.2, deltaUp: true },
+      ]},
+    ],
+    dragOverCol: null,
+    dragged: null,
+    canConfig: true,
+    editMode: false,
+    addMenuCol: null,
+    // pdv
+    pdvCart: [],
+    pdvGrupo: 'all',
+    pdvClienteId: null,
+    // pedidos
+    pedidos: [
+      { id: 'o1', numero: 1042, clienteId: 'c1', status: 'Em aberto', data: '14/07', items: [{ id: 'p3', qty: 6 }, { id: 'p4', qty: 12 }, { id: 'p11', qty: 4 }] },
+      { id: 'o2', numero: 1041, clienteId: 'c3', status: 'Em separação', data: '13/07', items: [{ id: 'p1', qty: 10 }, { id: 'p6', qty: 8 }, { id: 'p12', qty: 6 }] },
+      { id: 'o3', numero: 1040, clienteId: 'c5', status: 'Concluído', data: '12/07', items: [{ id: 'p3', qty: 24 }, { id: 'p4', qty: 12 }] },
+      { id: 'o4', numero: 1039, clienteId: 'c4', status: 'Em aberto', data: '12/07', items: [{ id: 'p8', qty: 2 }, { id: 'p10', qty: 1 }] },
+      { id: 'o5', numero: 1038, clienteId: 'c2', status: 'Cancelado', data: '11/07', items: [{ id: 'p2', qty: 5 }] },
+    ],
+    pedidoItems: [],
+    pedidoForm: { clienteId: '', status: 'Em aberto', obs: '' },
+    pedidoSearch: '',
+    pedidoFilter: 'all',
+    // modal
+    modal: null,
+    form: {},
+    payMethod: null,
+    payDone: false,
+    toast: null,
+  };
+
+  // ---------- helpers ----------
+  brl(n) { return 'R$ ' + Number(n).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  numBR(n) { return Number(n).toLocaleString('pt-BR'); }
+  grupo(id) { return this.state.grupos.find(g => g.id === id) || { nome: '—', cor: '#98a0af' }; }
+  tint(hex) {
+    const h = hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+    return 'rgba('+r+','+g+','+b+',0.13)';
+  }
+  initials(nome) { return nome.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase() || nome.slice(0,2).toUpperCase(); }
+  avatarColor(id) { const c=['#4b57d6','#1f9d6b','#d98a24','#c2557a','#2f9e8f','#7d5bd6']; let s=0; for(const ch of id) s+=ch.charCodeAt(0); return c[s%c.length]; }
+  stockStatus(p) {
+    if (p.estoque <= p.estoqueMin * 0.5) return { label: 'Crítico', cor: '#d64545', tint: '#fbe9e9' };
+    if (p.estoque <= p.estoqueMin) return { label: 'Baixo', cor: '#c47f16', tint: '#fbf1de' };
+    return { label: 'OK', cor: '#1f9d6b', tint: '#e6f6ee' };
+  }
+  showToast(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 2400); }
+
+  // ---------- nav ----------
+  setView = (v) => this.setState({ view: v, search: '' });
+
+  // ---------- empresa (multiempresa) ----------
+  toggleEmpresaMenu = () => this.setState(s => ({ empresaMenuOpen: !s.empresaMenuOpen }));
+  selectEmpresa = (id) => { this.setState({ empresaId: id, empresaMenuOpen: false }); const e = this.state.empresas.find(x => x.id === id); this.showToast('Empresa: ' + (e ? e.nome : '')); };
+  novaEmpresa = () => this.setState({ empresaMenuOpen: false, modal: { type: 'empresa', id: null }, form: { nome: '', cnpj: '', ramo: 'Varejo', cor: '#5865f2' } });
+
+  // ---------- dashboard drag ----------
+  onCardDragStart = (e) => {
+    const el = e.currentTarget;
+    this.setState({ dragged: { colId: el.getAttribute('data-col'), cardId: el.getAttribute('data-card') } });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  onCardDragEnd = () => this.setState({ dragged: null, dragOverCol: null });
+  onColDragOver = (e) => { e.preventDefault(); const id = e.currentTarget.getAttribute('data-col'); if (this.state.dragOverCol !== id) this.setState({ dragOverCol: id }); };
+  onColDragLeave = (e) => { const id = e.currentTarget.getAttribute('data-col'); if (this.state.dragOverCol === id) this.setState({ dragOverCol: null }); };
+  onColDrop = (e) => {
+    e.preventDefault();
+    const target = e.currentTarget.getAttribute('data-col');
+    const d = this.state.dragged;
+    this.setState(s => {
+      if (!d) return { dragOverCol: null };
+      const cols = s.columns.map(c => ({ ...c, cards: [...c.cards] }));
+      const src = cols.find(c => c.id === d.colId);
+      const idx = src.cards.findIndex(c => c.id === d.cardId);
+      if (idx < 0) return { dragOverCol: null };
+      const [card] = src.cards.splice(idx, 1);
+      cols.find(c => c.id === target).cards.push(card);
+      return { columns: cols, dragOverCol: null, dragged: null };
+    });
+  };
+
+  // ---------- pdv ----------
+  addToCart = (id) => this.setState(s => {
+    const ex = s.pdvCart.find(i => i.id === id);
+    if (ex) return { pdvCart: s.pdvCart.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i) };
+    return { pdvCart: [...s.pdvCart, { id, qty: 1 }] };
+  });
+  incQty = (id) => this.setState(s => ({ pdvCart: s.pdvCart.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i) }));
+  decQty = (id) => this.setState(s => ({ pdvCart: s.pdvCart.flatMap(i => i.id === id ? (i.qty > 1 ? [{ ...i, qty: i.qty - 1 }] : []) : [i]) }));
+  openPay = () => { if (this.state.pdvCart.length) this.setState({ modal: { type: 'pay' }, payMethod: null, payDone: false }); };
+  confirmPay = () => { if (!this.state.payMethod) { this.showToast('Selecione a forma de pagamento'); return; } this.setState({ payDone: true }); };
+  newSale = () => this.setState({ pdvCart: [], modal: null, payMethod: null, payDone: false, pdvClienteId: null });
+  openClienteSelect = () => this.setState({ modal: { type: 'selectCliente' } });
+
+  // ---------- crud ----------
+  openForm = (type, item) => {
+    let form = {};
+    if (type === 'cliente') form = item ? { ...item } : { nome: '', documento: '', telefone: '', email: '', cidade: '', compras: 0 };
+    if (type === 'produto') form = item ? { ...item } : { nome: '', sku: '', grupoId: 'g2', unidade: 'UN', preco: '', estoque: 0, estoqueMin: 5 };
+    if (type === 'grupo') form = item ? { ...item } : { nome: '', cor: '#4b57d6' };
+    if (type === 'unidade') form = item ? { ...item } : { sigla: '', nome: '' };
+    if (type === 'forma') form = item ? { ...item } : { nome: '', tipo: 'Cartão', taxa: '', prazo: 0, ativo: true };
+    this.setState({ modal: { type, id: item ? item.id : null }, form });
+  };
+  closeModal = () => this.setState({ modal: null });
+  stop = (e) => e.stopPropagation();
+  onField = (e) => { const f = e.target.getAttribute('data-field'); const v = e.target.value; this.setState(s => ({ form: { ...s.form, [f]: v } })); };
+  pickCor = (cor) => this.setState(s => ({ form: { ...s.form, cor } }));
+  toggleFormAtivo = () => this.setState(s => ({ form: { ...s.form, ativo: s.form.ativo === false } }));
+  toggleForma = (id) => this.setState(s => ({ formas: s.formas.map(f => f.id === id ? { ...f, ativo: !f.ativo } : f) }));
+  formaIcon(tipo) { return { Dinheiro: '💵', Pix: '📱', Cartão: '💳', Boleto: '🧾' }[tipo] || '💳'; }
+  formaMeta(tipo) { return { Dinheiro: { cor: '#1f9d6b', tint: '#e6f6ee' }, Pix: { cor: '#2f9e8f', tint: '#e6f5f2' }, Cartão: { cor: '#4b57d6', tint: '#eceeff' }, Boleto: { cor: '#c47f16', tint: '#fbf1de' } }[tipo] || { cor: '#5865f2', tint: '#eceeff' }; }
+  saveModal = () => {
+    const { modal, form } = this.state;
+    const t = modal.type;
+    if (t === 'empresa') {
+      this.setState(s => {
+        let rec = { ...form }; rec.cor = form.cor || '#5865f2';
+        if (modal.id) return { empresas: s.empresas.map(e => e.id === modal.id ? { ...e, ...rec } : e), modal: null };
+        rec.id = 'e' + Date.now();
+        return { empresas: [...s.empresas, rec], empresaId: rec.id, modal: null };
+      });
+      this.showToast(modal.id ? 'Empresa atualizada' : 'Empresa adicionada'); return;
+    }
+    const listKey = { cliente: 'clientes', produto: 'produtos', grupo: 'grupos', unidade: 'unidades', forma: 'formas' }[t];
+    this.setState(s => {
+      const list = s[listKey];
+      let rec = { ...form };
+      if (t === 'produto') { rec.preco = parseFloat(form.preco) || 0; rec.estoque = parseInt(form.estoque) || 0; rec.estoqueMin = parseInt(form.estoqueMin) || 0; }
+      if (t === 'unidade') rec.sigla = (form.sigla || '').toUpperCase();
+      if (t === 'forma') { rec.taxa = parseFloat(String(form.taxa).replace(',', '.')) || 0; rec.prazo = parseInt(form.prazo) || 0; rec.ativo = form.ativo !== false; }
+      if (modal.id) return { [listKey]: list.map(x => x.id === modal.id ? { ...x, ...rec } : x), modal: null };
+      rec.id = t[0] + Date.now();
+      return { [listKey]: [...list, rec], modal: null };
+    });
+    this.showToast(modal.id ? 'Registro atualizado' : 'Registro criado');
+  };
+  deleteItem = (listKey, id) => { this.setState(s => ({ [listKey]: s[listKey].filter(x => x.id !== id) })); this.showToast('Registro excluído'); };
+
+  // ---------- estoque ----------
+  adjust = (id, d) => this.setState(s => ({ produtos: s.produtos.map(p => p.id === id ? { ...p, estoque: Math.max(0, p.estoque + d) } : p) }));
+
+  // ---------- dashboard config ----------
+  togglePerm = () => this.setState(s => ({ canConfig: !s.canConfig, editMode: false, addMenuCol: null }));
+  toggleEdit = () => { if (this.state.canConfig) this.setState(s => ({ editMode: !s.editMode, addMenuCol: null })); };
+  openAddMenu = (colId) => this.setState(s => ({ addMenuCol: s.addMenuCol === colId ? null : colId }));
+  addCard = (colId, type) => {
+    const tpl = {
+      metric: { type: 'metric', label: 'Novo indicador', value: 0, money: false, delta: 0, deltaUp: true },
+      progress: { type: 'progress', label: 'Nova meta', pct: 50, color: '#4b57d6', sub: '0 de 100' },
+      bars: { type: 'bars', title: 'Novo gráfico', value: '—', bars: [30, 50, 40, 60, 55, 70, 65], label: 'período' },
+      list: { type: 'list', title: 'Nova lista', items: [{ label: 'Item 1', value: '—', tone: 'default' }, { label: 'Item 2', value: '—', tone: 'default' }] },
+    };
+    this.setState(s => ({ columns: s.columns.map(c => c.id === colId ? { ...c, cards: [...c.cards, { ...tpl[type], id: 't' + Date.now() }] } : c), addMenuCol: null }));
+    this.showToast('Card adicionado ao painel');
+  };
+  removeCard = (colId, cardId) => this.setState(s => ({ columns: s.columns.map(c => c.id === colId ? { ...c, cards: c.cards.filter(x => x.id !== cardId) } : c) }));
+
+  // ---------- pedidos ----------
+  statusMeta(st) { const m = { 'Rascunho': { cor: '#8b93a2', tint: '#eef0f4' }, 'Em aberto': { cor: '#3a7bd5', tint: '#e7f0fb' }, 'Em separação': { cor: '#c47f16', tint: '#fbf1de' }, 'Concluído': { cor: '#1f9d6b', tint: '#e6f6ee' }, 'Cancelado': { cor: '#d64545', tint: '#fbe9e9' } }; return m[st] || m['Rascunho']; }
+  filterTextPedido(str) { const q = this.state.pedidoSearch.trim().toLowerCase(); return !q || str.toLowerCase().includes(q); }
+  novoPedido = () => this.setState({ modal: { type: 'pedido', id: null }, pedidoItems: [], pedidoForm: { clienteId: '', status: 'Em aberto', obs: '' }, pedidoSearch: '' });
+  editPedido = (o) => this.setState({ modal: { type: 'pedido', id: o.id }, pedidoItems: o.items.map(i => ({ ...i })), pedidoForm: { clienteId: o.clienteId || '', status: o.status, obs: o.obs || '' }, pedidoSearch: '' });
+  addPedidoItem = (id) => this.setState(s => { const ex = s.pedidoItems.find(i => i.id === id); return ex ? { pedidoItems: s.pedidoItems.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i) } : { pedidoItems: [...s.pedidoItems, { id, qty: 1 }] }; });
+  incPedido = (id) => this.setState(s => ({ pedidoItems: s.pedidoItems.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i) }));
+  decPedido = (id) => this.setState(s => ({ pedidoItems: s.pedidoItems.flatMap(i => i.id === id ? (i.qty > 1 ? [{ ...i, qty: i.qty - 1 }] : []) : [i]) }));
+  onPedidoField = (e) => { const f = e.target.getAttribute('data-field'); const v = e.target.value; this.setState(s => ({ pedidoForm: { ...s.pedidoForm, [f]: v } })); };
+  savePedido = () => {
+    if (!this.state.pedidoItems.length) { this.showToast('Adicione ao menos um produto'); return; }
+    const isEdit = !!this.state.modal.id;
+    this.setState(s => {
+      const { modal, pedidoItems, pedidoForm } = s;
+      if (modal.id) return { pedidos: s.pedidos.map(o => o.id === modal.id ? { ...o, clienteId: pedidoForm.clienteId, status: pedidoForm.status, obs: pedidoForm.obs, items: pedidoItems } : o), modal: null };
+      const nums = s.pedidos.map(o => o.numero);
+      const numero = (nums.length ? Math.max(...nums) : 1042) + 1;
+      const d = new Date(); const data = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+      return { pedidos: [{ id: 'o' + Date.now(), numero, clienteId: pedidoForm.clienteId, status: pedidoForm.status, obs: pedidoForm.obs, items: pedidoItems, data }, ...s.pedidos], modal: null };
+    });
+    this.showToast(isEdit ? 'Pedido atualizado' : 'Pedido criado');
+  };
+  advanceStatus = (o) => { const flow = ['Em aberto', 'Em separação', 'Concluído']; const i = flow.indexOf(o.status); if (i >= 0 && i < flow.length - 1) this.setState(s => ({ pedidos: s.pedidos.map(x => x.id === o.id ? { ...x, status: flow[i + 1] } : x) })); this.showToast('Status atualizado'); };
+  deletePedido = (id) => { this.setState(s => ({ pedidos: s.pedidos.filter(o => o.id !== id) })); this.showToast('Pedido excluído'); };
+
+  filterText(str) { const q = this.state.search.trim().toLowerCase(); return !q || str.toLowerCase().includes(q); }
+
+  renderVals() {
+    const s = this.state;
+    const v = s.view;
+    const keys = ['dashboard','pdv','pedidos','clientes','produtos','grupos','unidades','formas','estoque'];
+    const navBg = {}, navFg = {};
+    keys.forEach(k => { navBg[k] = v === k ? 'rgba(255,255,255,0.10)' : 'transparent'; navFg[k] = v === k ? '#ffffff' : '#9aa3b2'; });
+
+    const titles = {
+      dashboard: ['Dashboard', 'Visão geral do seu negócio'],
+      pdv: ['PDV — Ponto de venda', 'Registre uma nova venda'],
+      pedidos: ['Pedidos', s.pedidos.filter(o => o.status === 'Em aberto').length + ' em aberto'],
+      clientes: ['Clientes', s.clientes.length + ' cadastrados'],
+      produtos: ['Produtos', s.produtos.length + ' cadastrados'],
+      grupos: ['Grupos de produtos', s.grupos.length + ' grupos'],
+      unidades: ['Unidades de medida', s.unidades.length + ' unidades'],
+      formas: ['Formas de pagamento', s.formas.filter(f => f.ativo).length + ' ativas'],
+      estoque: ['Controle de estoque', 'Monitore e ajuste as quantidades'],
+    };
+
+    // dashboard kpis
+    const kpis = [
+      { label: 'Faturamento (mês)', value: 'R$ 72.400', delta: '▲ 8,2% vs. mês anterior', deltaColor: '#1f9d6b' },
+      { label: 'Pedidos (mês)', value: '512', delta: '▲ 3,4% vs. mês anterior', deltaColor: '#1f9d6b' },
+      { label: 'Novos clientes', value: '27', delta: '▼ 1,1% vs. mês anterior', deltaColor: '#d64545' },
+      { label: 'Produtos ativos', value: this.numBR(s.produtos.length), delta: s.produtos.filter(p=>p.estoque<=p.estoqueMin).length + ' com estoque baixo', deltaColor: '#c47f16' },
+    ];
+
+    const toneColor = { danger: '#d64545', warn: '#c47f16', default: '#5a6270' };
+    const board = s.columns.map(col => ({
+      id: col.id,
+      title: col.title,
+      count: col.cards.length,
+      editMode: s.editMode,
+      addMenuOpen: s.addMenuCol === col.id,
+      onAddOpen: () => this.openAddMenu(col.id),
+      addTypes: [
+        { label: 'Métrica', icon: '▦', onPick: () => this.addCard(col.id, 'metric') },
+        { label: 'Progresso', icon: '◐', onPick: () => this.addCard(col.id, 'progress') },
+        { label: 'Gráfico de barras', icon: '▮', onPick: () => this.addCard(col.id, 'bars') },
+        { label: 'Lista', icon: '☰', onPick: () => this.addCard(col.id, 'list') },
+      ],
+      bg: s.dragOverCol === col.id ? '#e7ebff' : '#f1f3f8',
+      border: s.dragOverCol === col.id ? '#5865f2' : '#dee2ea',
+      dot: col.id === 'col1' ? '#4b57d6' : col.id === 'col2' ? '#1f9d6b' : '#d98a24',
+      cards: col.cards.map(c => {
+        const base = { id: c.id, colId: col.id, isMetric: c.type==='metric', isProgress: c.type==='progress', isList: c.type==='list', isBars: c.type==='bars' };
+        base.editMode = s.editMode;
+        base.onRemove = (e) => { e.stopPropagation(); this.removeCard(col.id, c.id); };
+        if (c.type === 'metric') { base.label=c.label; base.value=c.money?this.brl(c.value):this.numBR(c.value); base.deltaFmt=Math.abs(c.delta).toString().replace('.',',')+'%'; base.deltaColor=c.deltaUp?'#1f9d6b':'#d64545'; base.deltaArrow=c.deltaUp?'▲':'▼'; }
+        if (c.type === 'progress') { base.label=c.label; base.pct=c.pct+'%'; base.pctFmt=c.pct+'%'; base.color=c.color; base.sub=c.sub; }
+        if (c.type === 'bars') { base.title=c.title; base.value=c.value; base.label=c.label; const mx=Math.max(...c.bars); base.bars=c.bars.map((b,i)=>({ h: Math.round(b/mx*100)+'%', color: i===c.bars.length-1?'#4b57d6':'#c3caf7' })); }
+        if (c.type === 'list') { base.title=c.title; base.items=c.items.map(it=>({ label:it.label, value:it.value, tone: toneColor[it.tone] })); }
+        return base;
+      }),
+    }));
+
+    // pdv
+    const chipDefs = [{ id: 'all', nome: 'Todos' }, ...s.grupos];
+    const pdvChips = chipDefs.map(g => {
+      const on = s.pdvGrupo === g.id;
+      return { label: g.nome, onClick: () => this.setState({ pdvGrupo: g.id }), bg: on ? '#5865f2' : '#fff', fg: on ? '#fff' : '#5a6270', border: on ? '#5865f2' : '#e5e8ee' };
+    });
+    const pdvProdutos = s.produtos.filter(p => (s.pdvGrupo === 'all' || p.grupoId === s.pdvGrupo) && this.filterText(p.nome)).map(p => {
+      const g = this.grupo(p.grupoId);
+      return { id: p.id, nome: p.nome, preco: this.brl(p.preco), grupoNome: g.nome, grupoCor: g.cor, tint: this.tint(g.cor), estoque: p.estoque + ' ' + p.unidade, onAdd: () => this.addToCart(p.id) };
+    });
+    const cartDetailed = s.pdvCart.map(i => { const p = s.produtos.find(x => x.id === i.id); return { ...i, p }; }).filter(x => x.p);
+    const subtotal = cartDetailed.reduce((a, x) => a + x.p.preco * x.qty, 0);
+    const desconto = 0;
+    const total = subtotal - desconto;
+    const pdvCart = cartDetailed.map(x => ({ id: x.id, nome: x.p.nome, qty: x.qty, precoUnit: this.brl(x.p.preco), subtotal: this.brl(x.p.preco * x.qty), onInc: () => this.incQty(x.id), onDec: () => this.decQty(x.id) }));
+    const cli = s.clientes.find(c => c.id === s.pdvClienteId);
+
+    // clientes
+    const clientesView = s.clientes.filter(c => this.filterText(c.nome + ' ' + c.email + ' ' + c.cidade)).map(c => ({
+      ...c, initials: this.initials(c.nome), avatarBg: this.avatarColor(c.id), compras: this.brl(c.compras),
+      onEdit: () => this.openForm('cliente', c), onDelete: () => this.deleteItem('clientes', c.id),
+    }));
+
+    // produtos
+    const produtosView = s.produtos.filter(p => this.filterText(p.nome + ' ' + p.sku)).map(p => {
+      const g = this.grupo(p.grupoId); const st = this.stockStatus(p);
+      return { ...p, grupoNome: g.nome, grupoCor: g.cor, grupoTint: this.tint(g.cor), preco: this.brl(p.preco), estColor: st.cor,
+        onEdit: () => this.openForm('produto', p), onDelete: () => this.deleteItem('produtos', p.id) };
+    });
+
+    // grupos
+    const gruposView = s.grupos.filter(g => this.filterText(g.nome)).map(g => ({
+      ...g, tint: this.tint(g.cor), count: s.produtos.filter(p => p.grupoId === g.id).length,
+      onEdit: () => this.openForm('grupo', g), onDelete: () => this.deleteItem('grupos', g.id),
+    }));
+
+    // unidades
+    const unidadesView = s.unidades.filter(u => this.filterText(u.sigla + ' ' + u.nome)).map(u => ({
+      ...u, onEdit: () => this.openForm('unidade', u), onDelete: () => this.deleteItem('unidades', u.id),
+    }));
+
+    // formas de pagamento
+    const formasView = s.formas.filter(f => this.filterText(f.nome + ' ' + f.tipo)).map(f => {
+      const m = this.formaMeta(f.tipo);
+      return { ...f, icon: this.formaIcon(f.tipo), cor: m.cor, tint: m.tint,
+        taxaFmt: f.taxa > 0 ? f.taxa.toString().replace('.', ',') + '%' : 'Sem taxa',
+        prazoFmt: f.prazo === 0 ? 'Na hora' : 'D+' + f.prazo,
+        ativoLabel: f.ativo ? 'Ativa' : 'Inativa', ativoCor: f.ativo ? '#1f9d6b' : '#8b93a2', ativoTint: f.ativo ? '#e6f6ee' : '#eef0f4',
+        switchBg: f.ativo ? '#1f9d6b' : '#cbd2dc', switchKnob: f.ativo ? 'translateX(18px)' : 'translateX(0)',
+        onToggle: () => this.toggleForma(f.id), onEdit: () => this.openForm('forma', f), onDelete: () => this.deleteItem('formas', f.id) };
+    });
+
+    // estoque
+    const estoqueView = s.produtos.filter(p => this.filterText(p.nome)).map(p => {
+      const g = this.grupo(p.grupoId); const st = this.stockStatus(p);
+      return { id: p.id, nome: p.nome, grupoNome: g.nome, grupoCor: g.cor, grupoTint: this.tint(g.cor), estoque: p.estoque, estoqueMin: p.estoqueMin,
+        estColor: st.cor, status: st.label, statusCor: st.cor, statusTint: st.tint, onInc: () => this.adjust(p.id, 1), onDec: () => this.adjust(p.id, -1) };
+    });
+    const crit = s.produtos.filter(p => p.estoque <= p.estoqueMin * 0.5).length;
+    const baixo = s.produtos.filter(p => p.estoque > p.estoqueMin * 0.5 && p.estoque <= p.estoqueMin).length;
+    const ok = s.produtos.length - crit - baixo;
+    const estoqueResumo = [
+      { count: ok, label: 'Estoque saudável', sub: 'produtos acima do mínimo', cor: '#1f9d6b', tint: '#e6f6ee' },
+      { count: baixo, label: 'Estoque baixo', sub: 'reposição recomendada', cor: '#c47f16', tint: '#fbf1de' },
+      { count: crit, label: 'Estoque crítico', sub: 'reposição urgente', cor: '#d64545', tint: '#fbe9e9' },
+    ];
+
+    // pedidos
+    const stChips = [{ id: 'all', label: 'Todos' }, { id: 'Em aberto', label: 'Em aberto' }, { id: 'Em separação', label: 'Em separação' }, { id: 'Concluído', label: 'Concluído' }, { id: 'Cancelado', label: 'Cancelado' }];
+    const pedidoChips = stChips.map(c => { const on = s.pedidoFilter === c.id; return { label: c.label, onClick: () => this.setState({ pedidoFilter: c.id }), bg: on ? '#5865f2' : '#fff', fg: on ? '#fff' : '#5a6270', border: on ? '#5865f2' : '#e5e8ee' }; });
+    const pedidosView = s.pedidos.filter(o => {
+      const c = s.clientes.find(x => x.id === o.clienteId); const nm = c ? c.nome : 'Consumidor';
+      return (s.pedidoFilter === 'all' || o.status === s.pedidoFilter) && this.filterText('#' + o.numero + ' ' + nm);
+    }).map(o => {
+      const c = s.clientes.find(x => x.id === o.clienteId); const nm = c ? c.nome : 'Consumidor não identificado';
+      const tot = o.items.reduce((a, i) => { const p = s.produtos.find(x => x.id === i.id); return a + (p ? p.preco * i.qty : 0); }, 0);
+      const cnt = o.items.reduce((a, i) => a + i.qty, 0); const sm = this.statusMeta(o.status); const canAdv = ['Em aberto', 'Em separação'].includes(o.status);
+      return { id: o.id, numero: '#' + o.numero, clienteNome: nm, initials: this.initials(nm), avatarBg: this.avatarColor(o.id), itens: cnt + ' itens', total: this.brl(tot), status: o.status, statusCor: sm.cor, statusTint: sm.tint, data: o.data, canAdvance: canAdv, advOpacity: canAdv ? '1' : '0.3', advCursor: canAdv ? 'pointer' : 'not-allowed', onAdvance: () => { if (canAdv) this.advanceStatus(o); }, onEdit: () => this.editPedido(o), onDelete: () => this.deletePedido(o.id) };
+    });
+    const pedidoDetailed = s.pedidoItems.map(i => { const p = s.produtos.find(x => x.id === i.id); return { ...i, p }; }).filter(x => x.p);
+    const pedidoTotalNum = pedidoDetailed.reduce((a, x) => a + x.p.preco * x.qty, 0);
+    const pedidoItemsView = pedidoDetailed.map(x => ({ id: x.id, nome: x.p.nome, qty: x.qty, precoUnit: this.brl(x.p.preco), subtotal: this.brl(x.p.preco * x.qty), onInc: () => this.incPedido(x.id), onDec: () => this.decPedido(x.id) }));
+    const pedidoProdutos = s.produtos.filter(p => this.filterTextPedido(p.nome + ' ' + p.sku)).map(p => ({ id: p.id, nome: p.nome, preco: this.brl(p.preco), onAdd: () => this.addPedidoItem(p.id) }));
+
+    // modal
+    const modal = s.modal;
+    const mType = modal ? modal.type : null;
+    const modalTitles = {
+      cliente: modal && modal.id ? 'Editar cliente' : 'Novo cliente',
+      produto: modal && modal.id ? 'Editar produto' : 'Novo produto',
+      grupo: modal && modal.id ? 'Editar grupo' : 'Novo grupo',
+      unidade: modal && modal.id ? 'Editar unidade' : 'Nova unidade',
+      forma: modal && modal.id ? 'Editar forma de pagamento' : 'Nova forma de pagamento',
+      empresa: modal && modal.id ? 'Editar empresa' : 'Adicionar empresa',
+      selectCliente: 'Selecionar cliente', pay: 'Pagamento',
+      pedido: modal && modal.id ? 'Editar pedido' : 'Novo pedido',
+    };
+    const corPalette = ['#4b57d6','#1f9d6b','#d98a24','#c2557a','#2f9e8f','#7d5bd6','#d64545','#3a7bd5'];
+    const payMethodDefs = s.formas.filter(f => f.ativo).map(f => ({ id: f.id, label: f.nome, icon: this.formaIcon(f.tipo) }));
+    const payMethods = payMethodDefs.map(m => {
+      const on = s.payMethod === m.id;
+      return { label: m.label, icon: m.icon, onPick: () => this.setState({ payMethod: m.id }), border: on ? '#1f9d6b' : '#e5e8ee', bg: on ? '#f1faf5' : '#fff', fg: on ? '#1f9d6b' : '#3a404d' };
+    });
+    const payMethodLabel = (payMethodDefs.find(m => m.id === s.payMethod) || {}).label || '';
+
+    const clienteOptions = s.clientes.map(c => ({ nome: c.nome, documento: c.documento, initials: this.initials(c.nome), avatarBg: this.avatarColor(c.id), onPick: () => this.setState({ pdvClienteId: c.id, modal: null }) }));
+
+    return {
+      navBg, navFg,
+      goDashboard: () => this.setView('dashboard'), goPdv: () => this.setView('pdv'), goClientes: () => this.setView('clientes'),
+      goProdutos: () => this.setView('produtos'), goGrupos: () => this.setView('grupos'), goUnidades: () => this.setView('unidades'), goEstoque: () => this.setView('estoque'),
+      pageTitle: titles[v][0], pageSubtitle: titles[v][1],
+      empresaMenuOpen: s.empresaMenuOpen, toggleEmpresaMenu: this.toggleEmpresaMenu, novaEmpresa: this.novaEmpresa,
+      empresaAtual: (function(){ const e = s.empresas.find(x => x.id === s.empresaId) || s.empresas[0]; return { nome: e.nome, ramo: e.ramo, cor: e.cor, initials: (e.nome.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('')||e.nome.slice(0,2)).toUpperCase() }; })(),
+      empresaList: s.empresas.map(e => ({ nome: e.nome, cnpj: e.cnpj, ramo: e.ramo, cor: e.cor, initials: (e.nome.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('')||e.nome.slice(0,2)).toUpperCase(), active: e.id === s.empresaId, checkOpacity: e.id === s.empresaId ? '1' : '0', rowBg: e.id === s.empresaId ? '#f4f5ff' : '#fff', onPick: () => this.selectEmpresa(e.id) })),
+      search: s.search, onSearch: (e) => this.setState({ search: e.target.value }),
+      isDashboard: v==='dashboard', isPdv: v==='pdv', isPedidos: v==='pedidos', isClientes: v==='clientes', isProdutos: v==='produtos', isGrupos: v==='grupos', isUnidades: v==='unidades', isEstoque: v==='estoque',
+      goPedidos: () => this.setView('pedidos'),
+      pedidoChips, pedidosView, novoPedido: this.novoPedido,
+      pedidoItemsView, pedidoProdutos, pedidoEmpty: pedidoItemsView.length === 0,
+      pedidoTotal: this.brl(pedidoTotalNum), pedidoCount: pedidoDetailed.reduce((a, x) => a + x.qty, 0),
+      pedidoForm: s.pedidoForm, onPedidoField: this.onPedidoField, savePedido: this.savePedido,
+      pedidoSearch: s.pedidoSearch, onPedidoSearch: (e) => this.setState({ pedidoSearch: e.target.value }),
+      pedidoClienteOptions: s.clientes, pedidoStatusOptions: ['Rascunho', 'Em aberto', 'Em separação', 'Concluído', 'Cancelado'],
+      isPedido: mType === 'pedido', modalWidth: mType === 'pedido' ? '680px' : '460px',
+      kpis, board,
+      canConfig: s.canConfig, editMode: s.editMode,
+      togglePerm: this.togglePerm, toggleEdit: this.toggleEdit,
+      permSwitchBg: s.canConfig ? '#1f9d6b' : '#cbd2dc',
+      permKnob: s.canConfig ? 'translateX(18px)' : 'translateX(0)',
+      permBadgeText: s.canConfig ? 'Administrador' : 'Somente leitura',
+      permBadgeBg: s.canConfig ? '#e6f6ee' : '#eef0f4',
+      permBadgeFg: s.canConfig ? '#1f9d6b' : '#8b93a2',
+      editBtnLabel: s.editMode ? 'Concluir edição' : 'Editar painel',
+      editBtnBg: !s.canConfig ? '#eef0f4' : (s.editMode ? '#171922' : '#5865f2'),
+      editBtnFg: !s.canConfig ? '#b3bac6' : '#ffffff',
+      editBtnCursor: s.canConfig ? 'pointer' : 'not-allowed',
+      editHint: !s.canConfig ? 'Você não tem permissão para editar o painel.' : (s.editMode ? 'Modo edição — adicione, remova ou arraste os cards.' : 'Arraste os cards entre as colunas para organizar.'),
+      onCardDragStart: this.onCardDragStart, onCardDragEnd: this.onCardDragEnd, onColDragOver: this.onColDragOver, onColDragLeave: this.onColDragLeave, onColDrop: this.onColDrop,
+      pdvChips, pdvProdutos, pdvCart, pdvEmpty: pdvCart.length === 0,
+      pdvItemCount: cartDetailed.reduce((a, x) => a + x.qty, 0),
+      pdvSubtotal: this.brl(subtotal), pdvDesconto: this.brl(desconto), pdvTotal: this.brl(total),
+      pdvClienteNome: cli ? cli.nome : 'Consumidor não identificado',
+      openClienteSelect: this.openClienteSelect, openPay: this.openPay,
+      payBtnBg: pdvCart.length ? '#1f9d6b' : '#c3d3ca', payBtnCursor: pdvCart.length ? 'pointer' : 'not-allowed',
+      clientesView, novoCliente: () => this.openForm('cliente'),
+      produtosView, novoProduto: () => this.openForm('produto'),
+      gruposView, novoGrupo: () => this.openForm('grupo'),
+      unidadesView, novaUnidade: () => this.openForm('unidade'),
+      isFormas: v==='formas', goFormas: () => this.setView('formas'), formasView, novaForma: () => this.openForm('forma'),
+      estoqueView, estoqueResumo,
+      modalOpen: !!modal, modalTitle: modal ? modalTitles[mType] : '',
+      isSelectCliente: mType === 'selectCliente', isForm: ['cliente','produto','grupo','unidade','forma','empresa'].includes(mType), isPay: mType === 'pay',
+      formCliente: mType==='cliente', formProduto: mType==='produto', formGrupo: mType==='grupo', formUnidade: mType==='unidade', formForma: mType==='forma', formEmpresa: mType==='empresa',
+      empresaRamoOptions: ['Varejo', 'Alimentação', 'Atacado', 'Serviços', 'Outro'],
+      formTipoOptions: ['Dinheiro', 'Pix', 'Cartão', 'Boleto', 'Transferência'],
+      formAtivoBg: s.form.ativo === false ? '#cbd2dc' : '#1f9d6b', formAtivoKnob: s.form.ativo === false ? 'translateX(0)' : 'translateX(18px)', toggleFormAtivo: this.toggleFormAtivo,
+      form: s.form, onField: this.onField, closeModal: this.closeModal, saveModal: this.saveModal, stop: this.stop,
+      grupoOptions: s.grupos, unidadeOptions: s.unidades,
+      corOptions: corPalette.map(c => ({ cor: c, ring: s.form.cor === c ? '#171922' : 'transparent', onPick: () => this.pickCor(c) })),
+      clienteOptions, selectClienteAvulso: () => this.setState({ pdvClienteId: null, modal: null }),
+      payMethods, payDone: s.payDone, payChoosing: !s.payDone, confirmPay: this.confirmPay, newSale: this.newSale, payMethodLabel,
+      toastOpen: !!s.toast, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+openapi: 3.1.0
+info:
+  title: PedidosPro API
+  version: "1.0.0"
+  description: >
+    Contrato de API do PedidosPro. Regras narrativas em docs/PADRAO-API.md.
+    Nomes de campo seguem o dicionário Sankhya (CODEMP, CODPARC...).
+    Toda escrita é auditada (docs/PADRAO-AUDITORIA.md).
+servers:
+  - url: /api/v1
+tags:
+  - name: Auth
+  - name: Parâmetros
+  - name: Usuários
+  - name: Parceiros
+  - name: Pedidos
+  - name: Meta
+
+security:
+  - bearerAuth: []
+
+# Cabeçalhos padrão aplicáveis a recursos de negócio (referenciados por operação).
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Autenticar e obter JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token: { type: string }
+                      expires_in: { type: integer, example: 3600 }
+                      user: { $ref: "#/components/schemas/Usuario" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Usuário autenticado
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Usuario" } }
+
+  /parametros:
+    get:
+      tags: [Parâmetros]
+      parameters: [{ $ref: "#/components/parameters/XEmpresa" }]
+      summary: Lista parâmetros da empresa ativa
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Parametro" }
+
+  /parametros/{CHAVE}:
+    put:
+      tags: [Parâmetros]
+      description: Atualiza o valor. Somente ADMINISTRADOR. Auditado.
+      parameters:
+        - { $ref: "#/components/parameters/XEmpresa" }
+        - name: CHAVE
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { TEXTO: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Parametro" } }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /parceiros:
+    get:
+      tags: [Parceiros]
+      summary: Lista parceiros (clientes)
+      parameters:
+        - { $ref: "#/components/parameters/XEmpresa" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PerPage" }
+        - { $ref: "#/components/parameters/Sort" }
+        - { $ref: "#/components/parameters/Q" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CollectionEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Parceiro" }
+    post:
+      tags: [Parceiros]
+      summary: Cria parceiro
+      parameters:
+        - { $ref: "#/components/parameters/XEmpresa" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Parceiro" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Parceiro" } }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /parceiros/{CODPARC}:
+    parameters:
+      - { $ref: "#/components/parameters/XEmpresa" }
+      - name: CODPARC
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Parceiros]
+      summary: Detalhe do parceiro
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Parceiro" } }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [Parceiros]
+      summary: Atualiza parceiro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Parceiro" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Parceiro" } }
+    delete:
+      tags: [Parceiros]
+      summary: Remove parceiro
+      responses:
+        "204": { description: Removido }
+
+  /pedidos/{NUNOTA}:
+    patch:
+      tags: [Pedidos]
+      description: Transição de status seguindo o fluxo ABERTO→SEPARANDO→CONCLUIDO.
+      parameters:
+        - { $ref: "#/components/parameters/XEmpresa" }
+        - name: NUNOTA
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                STATUS:
+                  type: string
+                  enum: [RASCUNHO, ABERTO, SEPARANDO, CONCLUIDO, CANCELADO]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { data: { $ref: "#/components/schemas/Pedido" } }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /meta/capabilities:
+    get:
+      tags: [Meta]
+      summary: Descoberta de recursos/perfis/parâmetros (AI-friendly)
+      responses:
+        "200": { description: OK }
+
+# NOTA: /produtos, /grupos-produto, /unidades, /formas-pagamento, /estoque,
+# /usuarios, /auditoria seguem EXATAMENTE o mesmo padrão CRUD de /parceiros.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    XEmpresa:
+      name: X-Empresa
+      in: header
+      required: true
+      description: CODEMP da empresa ativa
+      schema: { type: integer }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+    Page:      { name: page, in: query, schema: { type: integer, default: 1 } }
+    PerPage:   { name: per_page, in: query, schema: { type: integer, default: 25, maximum: 100 } }
+    Sort:      { name: sort, in: query, schema: { type: string }, description: "Campo asc; -Campo desc" }
+    Q:         { name: q, in: query, schema: { type: string }, description: "Busca textual" }
+
+  responses:
+    Error:
+      description: Erro (RFC 7807 + code estável)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code:
+          type: string
+          enum: [BAD_REQUEST, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, CONFLICT, VALIDATION_ERROR, RATE_LIMITED, INTERNAL_ERROR]
+        detail: { type: string }
+        request_id: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+    CollectionEnvelope:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            request_id: { type: string }
+            pagination:
+              type: object
+              properties:
+                page: { type: integer }
+                per_page: { type: integer }
+                total: { type: integer }
+                total_pages: { type: integer }
+    Usuario:
+      type: object
+      properties:
+        CODUSU: { type: integer }
+        NOMEUSU: { type: string }
+        EMAIL: { type: string, format: email }
+        PERFIL: { type: string, enum: [ADMINISTRADOR, VENDEDOR, CAIXA] }
+        ATIVO: { type: string, enum: [S, N] }
+    Parametro:
+      type: object
+      properties:
+        CHAVE: { type: string }
+        TEXTO: { type: string }
+        TIPO: { type: string, enum: [TEXTO, NUMERO, BOOL, JSON] }
+        CODEMP: { type: integer, nullable: true }
+        DESCRICAO: { type: string }
+        EDITAVEL: { type: string, enum: [S, N] }
+    Parceiro:
+      type: object
+      required: [NOMEPARC]
+      properties:
+        CODPARC: { type: integer, readOnly: true }
+        CODEMP: { type: integer }
+        NOMEPARC: { type: string }
+        TIPPESSOA: { type: string, enum: [F, J] }
+        CGC_CPF: { type: string, nullable: true }
+        TELEFONE: { type: string, nullable: true }
+        EMAIL: { type: string, nullable: true }
+        CIDADE: { type: string, nullable: true }
+        ATIVO: { type: string, enum: [S, N] }
+    Pedido:
+      type: object
+      properties:
+        NUNOTA: { type: integer, readOnly: true }
+        NUMNOTA: { type: integer }
+        CODEMP: { type: integer }
+        CODPARC: { type: integer, nullable: true }
+        CODTIPVENDA: { type: integer, nullable: true }
+        STATUS: { type: string, enum: [RASCUNHO, ABERTO, SEPARANDO, CONCLUIDO, CANCELADO] }
+        VLRSUBTOT: { type: number }
+        VLRDESC: { type: number }
+        VLRTOT: { type: number }
+        itens:
+          type: array
+          items:
+            type: object
+            properties:
+              SEQUENCIA: { type: integer }
+              CODPROD: { type: integer }
+              QTDNEG: { type: number }
+              VLRUNIT: { type: number }
+              VLRTOT: { type: number }
