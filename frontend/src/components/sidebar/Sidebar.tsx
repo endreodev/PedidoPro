@@ -13,6 +13,7 @@ import {
   Coins,
   Landmark,
   Receipt,
+  Puzzle,
   LogOut,
   Settings,
 } from 'lucide-react'
@@ -78,6 +79,7 @@ export default function Sidebar() {
       label: 'ADMIN',
       items: [
         { icon: Wallet, label: 'Conferência de Caixas', view: 'caixas', path: '/caixas' },
+        { icon: Puzzle, label: 'Integrações', view: 'integracoes', path: '/integracoes' },
         { icon: Users, label: 'Usuários', view: 'users', path: '/users' },
       ],
     },

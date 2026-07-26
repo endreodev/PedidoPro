@@ -25,6 +25,7 @@ import StockControlPage from './pages/StockControlPage'
 import StockEditorPage from './pages/StockEditorPage'
 import UsersPage from './pages/UsersPage'
 import CaixaConferenciaPage from './pages/CaixaConferenciaPage'
+import IntegracoesPage from './pages/IntegracoesPage'
 import ContasFinanceirasPage from './pages/financeiro/ContasFinanceirasPage'
 import ContaFinanceiraEditorPage from './pages/financeiro/ContaFinanceiraEditorPage'
 import ContasBancariasPage from './pages/financeiro/ContasBancariasPage'
@@ -96,6 +97,7 @@ function App() {
               <Route path="/financeiro/titulos" element={<Guarded view="fin-titulos"><TitulosPage /></Guarded>} />
               <Route path="/financeiro/titulos/new" element={<Guarded view="fin-titulos"><TituloEditorPage /></Guarded>} />
               <Route path="/financeiro/titulos/:id" element={<Guarded view="fin-titulos"><TituloEditorPage /></Guarded>} />
+              <Route path="/integracoes" element={<Guarded view="integracoes"><IntegracoesPage /></Guarded>} />
               <Route path="/users" element={<Guarded view="users"><UsersPage /></Guarded>} />
               <Route path="/settings" element={<Guarded view="settings"><SettingsPage /></Guarded>} />
             </Route>

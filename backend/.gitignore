@@ -5,7 +5,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# /vendor  -> versionado de propósito (deploy por clone na Hostinger, sem composer no servidor)
 .env
 .env.backup
 .env.production

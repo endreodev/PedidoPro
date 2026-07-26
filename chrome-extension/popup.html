@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { width: 340px; margin: 0; padding: 14px; color: #16181d; background: #fff; }
+    h1 { font-size: 15px; margin: 0 0 2px; }
+    p.sub { font-size: 11px; color: #7b8290; margin: 0 0 12px; }
+    label { display: block; font-size: 11px; color: #7b8290; margin: 10px 0 4px; font-weight: 600; }
+    input { width: 100%; height: 34px; padding: 0 9px; border: 1px solid #dfe3ea; border-radius: 8px; font-size: 13px; }
+    input:focus { outline: none; border-color: #5865f2; }
+    .row { display: flex; gap: 8px; }
+    button { height: 36px; border: 0; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .primary { background: #5865f2; color: #fff; width: 100%; margin-top: 12px; }
+    .ghost { background: #eef0f4; color: #16181d; }
+    .primary:disabled { opacity: .5; cursor: not-allowed; }
+    #status { margin-top: 12px; font-size: 12px; border-radius: 8px; padding: 9px; display: none; }
+    .ok { background: #e6f6ee; color: #1f7a4d; }
+    .err { background: #fbe9e9; color: #b03636; }
+    .muted { font-size: 11px; color: #9aa3b2; margin-top: 10px; line-height: 1.4; }
+    a { color: #5865f2; }
+  </style>
+</head>
+<body>
+  <h1>PedidosPro — Importar contatos</h1>
+  <p class="sub">Envia os contatos do WhatsApp Web como clientes.</p>
+
+  <label>URL do sistema</label>
+  <input id="url" type="url" placeholder="https://thays.ibyt.com.br" />
+
+  <label>Token de integração</label>
+  <div class="row">
+    <input id="token" type="password" placeholder="pp_..." />
+    <button class="ghost" id="toggle" title="Mostrar/ocultar" style="width:44px">👁</button>
+  </div>
+
+  <button class="ghost" id="save" style="width:100%; margin-top:10px">Salvar configuração</button>
+  <button class="primary" id="sync">Sincronizar contatos do WhatsApp</button>
+
+  <div id="status"></div>
+
+  <p class="muted">
+    1) Gere o token em <b>Configurações → Integrações</b> no sistema e cole acima.<br />
+    2) Abra o <b>web.whatsapp.com</b> numa aba, com as conversas carregadas.<br />
+    3) Clique em "Sincronizar". Contatos repetidos (mesmo telefone) não são duplicados.
+  </p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

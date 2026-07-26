@@ -1,0 +1,10 @@
+# dependências (não versionar)
+node_modules
+
+# logs / temporários
+*.log
+.DS_Store
+*.local
+.vite
+
+# NOTA: frontend/dist É versionado de propósito (deploy por clone na Hostinger).

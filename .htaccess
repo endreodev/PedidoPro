@@ -1,0 +1,54 @@
+# =====================================================================
+# PedidosPro — .htaccess da raiz (Apache / LiteSpeed, ex.: Hostinger)
+# Coloque a raiz do projeto como document root (public_html).
+#
+#   /api/...   -> backend Laravel (backend/public/index.php)
+#   demais     -> SPA do frontend (frontend/dist), com fallback do React Router
+#
+# Pré-requisitos no servidor:
+#   1) frontend: rodar "npm run build" (gera frontend/dist)
+#   2) backend:  "composer install --no-dev" e criar o .env (DB_HOST=localhost na Hostinger)
+# =====================================================================
+
+Options -Indexes
+DirectoryIndex disabled
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Se o projeto estiver num subdiretório, ajuste a linha abaixo (ex.: RewriteBase /pasta/)
+  RewriteBase /
+
+  # ---------- Bloqueio de arquivos/pastas sensíveis ----------
+  RewriteRule (^|/)\.env$            - [F]
+  RewriteRule (^|/)\.git             - [F]
+  RewriteRule ^backend/(?!public/)   - [F]
+  RewriteRule ^frontend/(?!dist/)    - [F]
+
+  # ---------- API -> Laravel ----------
+  # Requisições /api/... vão para o front controller do Laravel.
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ backend/public/index.php [L]
+
+  # ---------- Assets reais do build do frontend ----------
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist%{REQUEST_URI} -f
+  RewriteRule ^ frontend/dist%{REQUEST_URI} [L]
+
+  # ---------- SPA (React Router) -> index.html ----------
+  # Tudo que não for arquivo real (e não /api) cai no index.html do SPA,
+  # inclusive a raiz "/". Diretórios internos já foram bloqueados acima.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ frontend/dist/index.html [L]
+</IfModule>
+
+# ---------- Cache dos assets versionados do build ----------
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpe?g|gif|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# ---------- Compressão ----------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

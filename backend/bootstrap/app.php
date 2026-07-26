@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'jwt' => \App\Http\Middleware\JwtAuth::class,
+            'integ' => \App\Http\Middleware\IntegrationAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

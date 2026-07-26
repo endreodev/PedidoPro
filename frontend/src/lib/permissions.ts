@@ -5,7 +5,7 @@ const MATRIX: Record<Perfil, string[]> = {
   administrador: [
     'dashboard', 'pdv', 'orders', 'customers', 'products',
     'product-groups', 'units', 'payment-methods', 'stock-control',
-    'caixas', 'fin-contas', 'fin-bancos', 'fin-titulos', 'users', 'settings',
+    'caixas', 'fin-contas', 'fin-bancos', 'fin-titulos', 'integracoes', 'users', 'settings',
   ],
   vendedor: [
     'dashboard', 'pdv', 'orders', 'customers', 'products',
@@ -35,6 +35,7 @@ const VIEW_TO_PATH: Record<string, string> = {
   'fin-contas': '/financeiro/contas',
   'fin-bancos': '/financeiro/bancos',
   'fin-titulos': '/financeiro/titulos',
+  integracoes: '/integracoes',
   users: '/users',
   settings: '/settings',
 }

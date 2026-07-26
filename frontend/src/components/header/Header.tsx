@@ -18,6 +18,7 @@ const PATH_LABELS: Record<string, { title: string; subtitle: string }> = {
   '/financeiro/contas': { title: 'Contas', subtitle: 'Categorias financeiras (receitas e despesas)' },
   '/financeiro/bancos': { title: 'Contas Bancárias', subtitle: 'Bancos e caixa' },
   '/financeiro/titulos': { title: 'Títulos', subtitle: 'Contas a receber e a pagar' },
+  '/integracoes': { title: 'Integrações', subtitle: 'Tokens para a extensão do Chrome' },
   '/users': { title: 'Usuários', subtitle: 'Gerenciar usuários' },
   '/settings': { title: 'Configurações', subtitle: 'Parâmetros e aparência' },
 }

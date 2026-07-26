@@ -13,6 +13,7 @@ use App\Http\Controllers\CaixaController;
 use App\Http\Controllers\NaturezaController;
 use App\Http\Controllers\ContaBancariaController;
 use App\Http\Controllers\TituloController;
+use App\Http\Controllers\IntegracaoController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -92,4 +93,16 @@ Route::middleware('jwt')->group(function () {
     Route::put('/financeiro/titulos/{id}', [TituloController::class, 'update']);
     Route::put('/financeiro/titulos/{id}/baixar', [TituloController::class, 'baixar']);
     Route::delete('/financeiro/titulos/{id}', [TituloController::class, 'destroy']);
+
+    // Tokens de integração (admin)
+    Route::get('/integracao/tokens', [IntegracaoController::class, 'listarTokens']);
+    Route::post('/integracao/tokens', [IntegracaoController::class, 'gerarToken']);
+    Route::delete('/integracao/tokens/{id}', [IntegracaoController::class, 'revogarToken']);
 });
+
+// Integração externa (extensão Chrome) — autenticada por X-Integration-Key
+Route::middleware('integ')->group(function () {
+    Route::post('/integracao/clientes', [IntegracaoController::class, 'criarCliente']);
+    Route::post('/integracao/sincronizar', [IntegracaoController::class, 'sincronizar']);
+});
+
