@@ -25,30 +25,32 @@ $('save').onclick = () => {
 }
 
 // Função injetada na página do WhatsApp Web para ler os contatos da lista.
+// A lista é virtualizada: as conversas são [role="row"] dentro do #pane-side
+// (que também é o container de rolagem), e o nome fica em span[dir="auto"][title].
+// Mantém o seletor antigo (div[role="listitem"]) como fallback para versões antigas.
 async function scrapeWhatsApp() {
   const pane = document.querySelector('#pane-side')
   const seen = new Map()
   const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
 
   const collect = () => {
-    document.querySelectorAll('#pane-side div[role="listitem"]').forEach((item) => {
-      const span = item.querySelector('span[title]')
+    document.querySelectorAll('#pane-side [role="row"], #pane-side div[role="listitem"]').forEach((row) => {
+      const span = row.querySelector('span[dir="auto"][title]') || row.querySelector('span[title]')
       if (!span) return
       const t = (span.getAttribute('title') || span.textContent || '').trim()
       if (!t || seen.has(t)) return
-      if (isPhone(t)) seen.set(t, { name: '', phone: t })
-      else seen.set(t, { name: t, phone: '' })
+      seen.set(t, isPhone(t) ? { name: '', phone: t } : { name: t, phone: '' })
     })
   }
 
   if (pane) {
     let last = -1
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 60; i++) {
       collect()
       if (seen.size === last) break
       last = seen.size
       pane.scrollBy(0, pane.clientHeight)
-      await new Promise((r) => setTimeout(r, 350))
+      await new Promise((r) => setTimeout(r, 320))
     }
     pane.scrollTo(0, 0)
   }
@@ -57,13 +59,14 @@ async function scrapeWhatsApp() {
 }
 
 // Função injetada para ler o contato da conversa aberta (cabeçalho do #main).
+// No WhatsApp Web atual o nome do contato no cabeçalho fica em span[dir="auto"]
+// (o antigo span[title] deixou de existir ali). Tenta title e cai para textContent.
 function scrapeOpenChat() {
   const header = document.querySelector('#main header')
   if (!header) return null
   const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
-  // O título do contato costuma ser o primeiro span[title] com dir="auto" no header.
-  const spans = [...header.querySelectorAll('span[title]')]
-  const t = (spans.find((s) => (s.getAttribute('title') || '').trim())?.getAttribute('title') || '').trim()
+  const span = header.querySelector('span[dir="auto"][title]') || header.querySelector('span[dir="auto"]')
+  const t = span ? (span.getAttribute('title') || span.textContent || '').trim() : ''
   if (!t) return null
   return isPhone(t) ? { name: '', phone: t } : { name: t, phone: '' }
 }
