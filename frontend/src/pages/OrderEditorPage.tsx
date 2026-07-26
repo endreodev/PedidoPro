@@ -51,15 +51,15 @@ export default function OrderEditorPage() {
     const up = p ? unitPriceForQty(p, q) : i.unit_price
     return { ...i, quantity: q, unit_price: up, subtotal: q * up }
   }
+  // Sempre cria uma nova linha (permite o mesmo produto várias vezes). Ações operam por id da linha.
+  const lineId = () => 'it' + Math.random().toString(36).slice(2, 9)
   const addProduct = (p: Product) => setItems((its) => {
-    const found = its.find((i) => i.product_id === p.id)
-    if (found) return its.map((i) => (i.product_id === p.id ? reprice(i, i.quantity + 1) : i))
     const up = unitPriceForQty(p, 1)
-    return [...its, { id: `it${its.length}`, product_id: p.id, quantity: 1, unit_price: up, subtotal: up }]
+    return [...its, { id: lineId(), product_id: p.id, quantity: 1, unit_price: up, subtotal: up }]
   })
-  const setQty = (pid: string, qty: number) => setItems((its) => its.map((i) => (i.product_id === pid ? reprice(i, qty) : i)))
-  const bump = (pid: string, d: number) => setItems((its) => its.map((i) => (i.product_id === pid ? reprice(i, i.quantity + d) : i)))
-  const removeItem = (pid: string) => setItems((its) => its.filter((i) => i.product_id !== pid))
+  const setQty = (id: string, qty: number) => setItems((its) => its.map((i) => (i.id === id ? reprice(i, qty) : i)))
+  const bump = (id: string, d: number) => setItems((its) => its.map((i) => (i.id === id ? reprice(i, i.quantity + d) : i)))
+  const removeItem = (id: string) => setItems((its) => its.filter((i) => i.id !== id))
 
   const save = (overrideStatus?: Status) => {
     if (!company) return
@@ -152,19 +152,19 @@ export default function OrderEditorPage() {
               {items.map((i) => {
                 const p = products.find((x) => x.id === i.product_id)
                 return (
-                  <tr key={i.product_id} className="border-b border-border last:border-0">
+                  <tr key={i.id} className="border-b border-border last:border-0">
                     <td className="py-2 text-text-primary">{p?.name ?? i.product_id}</td>
                     <td className="py-2 mono text-right text-text-secondary">{brl(i.unit_price)}</td>
                     <td className="py-2">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => bump(i.product_id, -1)} className="w-6 h-6 rounded-full border border-border">-</button>
-                        <input type="number" min={1} value={i.quantity} onChange={(e) => setQty(i.product_id, Number(e.target.value))}
+                        <button onClick={() => bump(i.id, -1)} className="w-6 h-6 rounded-full border border-border">-</button>
+                        <input type="number" min={1} value={i.quantity} onChange={(e) => setQty(i.id, Number(e.target.value))}
                           className="w-14 h-8 text-center mono rounded border border-border bg-surface" />
-                        <button onClick={() => bump(i.product_id, 1)} className="w-6 h-6 rounded-full border border-border">+</button>
+                        <button onClick={() => bump(i.id, 1)} className="w-6 h-6 rounded-full border border-border">+</button>
                       </div>
                     </td>
                     <td className="py-2 mono text-right text-text-primary">{brl(i.subtotal)}</td>
-                    <td className="py-2 text-right"><button onClick={() => removeItem(i.product_id)} className="text-error"><Trash2 className="w-4 h-4" /></button></td>
+                    <td className="py-2 text-right"><button onClick={() => removeItem(i.id)} className="text-error"><Trash2 className="w-4 h-4" /></button></td>
                   </tr>
                 )
               })}
