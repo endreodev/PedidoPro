@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutGrid,
@@ -14,6 +15,7 @@ import {
   Landmark,
   Receipt,
   Puzzle,
+  ChevronDown,
   LogOut,
   Settings,
 } from 'lucide-react'
@@ -41,6 +43,18 @@ export default function Sidebar() {
   }
 
   const isActive = (view: string) => currentView === view
+
+  // Grupos recolhidos (persistido no dispositivo).
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('nav_collapsed') || '{}') } catch { return {} }
+  })
+  const toggleGroup = (label: string) => {
+    setCollapsed((c) => {
+      const next = { ...c, [label]: !c[label] }
+      try { localStorage.setItem('nav_collapsed', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const navGroups = [
     {
@@ -113,33 +127,43 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto">
-        {visibleGroups.map((group) => (
-          <div key={group.label}>
-            <div className="px-4 py-3 text-xs font-600 text-text-secondary uppercase tracking-wider">
-              {group.label}
+        {visibleGroups.map((group) => {
+          const isCollapsed = !!collapsed[group.label]
+          return (
+            <div key={group.label}>
+              <button
+                onClick={() => toggleGroup(group.label)}
+                className="w-full flex items-center justify-between px-4 py-3 text-xs font-600 text-text-secondary uppercase tracking-wider hover:text-white transition-colors"
+                aria-expanded={!isCollapsed}
+              >
+                <span>{group.label}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+              </button>
+              {!isCollapsed && (
+                <div className="space-y-1 px-2 pb-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const active = isActive(item.view)
+                    return (
+                      <button
+                        key={item.view}
+                        onClick={() => handleNavigation(item.view, item.path)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-600 transition-colors ${
+                          active
+                            ? 'bg-white/10 text-white'
+                            : 'text-text-secondary hover:bg-white/5'
+                        }`}
+                      >
+                        <Icon className="w-[17px] h-[17px]" />
+                        <span className="text-[13.5px]">{item.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-            <div className="space-y-1 px-2">
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const active = isActive(item.view)
-                return (
-                  <button
-                    key={item.view}
-                    onClick={() => handleNavigation(item.view, item.path)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-600 transition-colors ${
-                      active
-                        ? 'bg-white/10 text-white'
-                        : 'text-text-secondary hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon className="w-[17px] h-[17px]" />
-                    <span className="text-[13.5px]">{item.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </nav>
 
       {/* User Card and Logout */}
