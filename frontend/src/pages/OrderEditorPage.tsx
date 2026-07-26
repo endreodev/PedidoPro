@@ -77,7 +77,7 @@ export default function OrderEditorPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/orders')} className="flex items-center gap-2 text-text-secondary hover:text-text-primary font-600">
