@@ -6,9 +6,6 @@
 /storage/*.key
 /storage/pail
 # /vendor  -> versionado de propósito (deploy por clone na Hostinger, sem composer no servidor)
-.env
-.env.backup
-.env.production
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
