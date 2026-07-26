@@ -56,55 +56,83 @@ async function scrapeWhatsApp() {
   return [...seen.values()]
 }
 
-$('sync').onclick = async () => {
-  const url = $('url').value.trim().replace(/\/+$/, '')
-  const token = $('token').value.trim()
-  if (!url || !token) { show('Preencha a URL e o token.', 'err'); return }
-  chrome.storage.local.set({ url, token })
+// Função injetada para ler o contato da conversa aberta (cabeçalho do #main).
+function scrapeOpenChat() {
+  const header = document.querySelector('#main header')
+  if (!header) return null
+  const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
+  // O título do contato costuma ser o primeiro span[title] com dir="auto" no header.
+  const spans = [...header.querySelectorAll('span[title]')]
+  const t = (spans.find((s) => (s.getAttribute('title') || '').trim())?.getAttribute('title') || '').trim()
+  if (!t) return null
+  return isPhone(t) ? { name: '', phone: t } : { name: t, phone: '' }
+}
 
-  $('sync').disabled = true
-  show('Lendo contatos do WhatsApp…', 'ok')
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-  if (!tab || !/web\.whatsapp\.com/.test(tab.url || '')) {
-    show('Abra o web.whatsapp.com na aba ativa e tente de novo.', 'err')
-    $('sync').disabled = false
-    return
-  }
-
-  let contatos = []
-  try {
-    const res = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scrapeWhatsApp })
-    contatos = (res && res[0] && res[0].result) || []
-  } catch (e) {
-    show('Não consegui ler a página: ' + e.message, 'err')
-    $('sync').disabled = false
-    return
-  }
-
-  if (!contatos.length) {
-    show('Nenhum contato encontrado. Verifique se as conversas estão carregadas.', 'err')
-    $('sync').disabled = false
-    return
-  }
-
-  show(`Enviando ${contatos.length} contatos…`, 'ok')
+// Envia os contatos ao sistema e mostra o resultado. Retorna true em sucesso.
+async function enviar(url, token, contatos, lidosLabel) {
+  show(`Enviando ${contatos.length} ${lidosLabel}…`, 'ok')
   try {
     const r = await fetch(`${url}/api/v1/integracao/sincronizar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Integration-Key': token },
       body: JSON.stringify({ contatos }),
     })
-    if (r.status === 401) {
-      show('Token inválido. Confira o token de integração.', 'err')
-    } else if (!r.ok) {
-      show('Erro do servidor: HTTP ' + r.status, 'err')
-    } else {
-      const d = (await r.json()).data
-      show(`Concluído! ${contatos.length} lidos · ${d.criados} novos · ${d.existentes} já existiam · ${d.ignorados} ignorados.`, 'ok')
-    }
+    if (r.status === 401) { show('Token inválido. Confira o token de integração.', 'err'); return false }
+    if (!r.ok) { show('Erro do servidor: HTTP ' + r.status, 'err'); return false }
+    const d = (await r.json()).data
+    show(`Concluído! ${contatos.length} ${lidosLabel} · ${d.criados} novos · ${d.existentes} já existiam · ${d.ignorados} ignorados.`, 'ok')
+    return true
   } catch (e) {
     show('Falha de conexão com ' + url + ': ' + e.message, 'err')
+    return false
+  }
+}
+
+// Garante URL+token, aba do WhatsApp ativa e roda o scraper informado.
+async function coletar(botao, mensagemLendo, scraper) {
+  const url = $('url').value.trim().replace(/\/+$/, '')
+  const token = $('token').value.trim()
+  if (!url || !token) { show('Preencha a URL e o token.', 'err'); return null }
+  chrome.storage.local.set({ url, token })
+
+  $(botao).disabled = true
+  show(mensagemLendo, 'ok')
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab || !/web\.whatsapp\.com/.test(tab.url || '')) {
+    show('Abra o web.whatsapp.com na aba ativa e tente de novo.', 'err')
+    $(botao).disabled = false
+    return null
+  }
+  try {
+    const res = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scraper })
+    return { url, token, result: (res && res[0] && res[0].result) || null }
+  } catch (e) {
+    show('Não consegui ler a página: ' + e.message, 'err')
+    $(botao).disabled = false
+    return null
+  }
+}
+
+$('capture').onclick = async () => {
+  const c = await coletar('capture', 'Lendo a conversa aberta…', scrapeOpenChat)
+  if (!c) return
+  if (!c.result) {
+    show('Nenhuma conversa aberta. Abra a conversa do contato e tente de novo.', 'err')
+  } else {
+    await enviar(c.url, c.token, [c.result], 'contato')
+  }
+  $('capture').disabled = false
+}
+
+$('sync').onclick = async () => {
+  const c = await coletar('sync', 'Lendo contatos do WhatsApp…', scrapeWhatsApp)
+  if (!c) return
+  const contatos = c.result || []
+  if (!contatos.length) {
+    show('Nenhum contato encontrado. Verifique se as conversas estão carregadas.', 'err')
+  } else {
+    await enviar(c.url, c.token, contatos, 'contatos')
   }
   $('sync').disabled = false
 }

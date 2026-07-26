@@ -17,8 +17,10 @@ Lê os contatos das conversas do **WhatsApp Web** e cadastra como clientes no Pe
 
 ## Usar
 1. Abra o **web.whatsapp.com** numa aba e deixe as conversas carregarem.
-2. Clique no ícone da extensão → **Sincronizar contatos do WhatsApp**.
-3. A extensão rola a lista de conversas, lê os contatos e envia. Repetidos (mesmo telefone) **não são duplicados**.
+2. Clique no ícone da extensão. Há duas opções:
+   - **Capturar contato aberto**: abra a conversa de um contato e clique aqui — envia **só** aquele contato (lido do cabeçalho da conversa).
+   - **Sincronizar contatos do WhatsApp**: rola a lista de conversas e envia **todos** os contatos de uma vez.
+3. Repetidos (mesmo telefone) **não são duplicados**.
 
 ## Como funciona
 - `POST {URL}/api/v1/integracao/sincronizar` com header `X-Integration-Key: <token>` e corpo `{ "contatos": [{ "name": "...", "phone": "..." }] }`.
