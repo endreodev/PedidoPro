@@ -160,6 +160,24 @@ const setLocal = (o) => new Promise((r) => chrome.storage.local.set(o, r))
 // Chama a API pelo service worker (a página do WhatsApp bloqueia fetch externo por CSP).
 const chamarApi = (msg) => new Promise((r) => chrome.runtime.sendMessage(msg, r))
 
+// Mostra um selo flutuante na página com o que a extensão está fazendo (diagnóstico).
+function statusPP(msg, cor) {
+  try {
+    let el = document.getElementById('pp-status')
+    if (!el) {
+      el = document.createElement('div')
+      el.id = 'pp-status'
+      el.style.cssText =
+        'position:fixed;z-index:2147483647;bottom:16px;right:16px;max-width:340px;padding:10px 14px;' +
+        'border-radius:10px;font:13px/1.4 system-ui,sans-serif;color:#fff;background:#5865f2;' +
+        'box-shadow:0 6px 20px rgba(0,0,0,.28)'
+      ;(document.body || document.documentElement).appendChild(el)
+    }
+    el.style.background = cor || '#5865f2'
+    el.textContent = 'PedidosPro: ' + msg
+  } catch (e) { /* ignora */ }
+}
+
 async function esperarFooter(timeoutMs) {
   const fim = Date.now() + timeoutMs
   while (Date.now() < fim) {
@@ -180,17 +198,23 @@ async function completarOrcamentoPendente() {
   }
   ocupado = true // impede o monitor de DDD de mexer na conversa durante o envio
   try {
-    const abriu = await esperarFooter(20000)
+    statusPP('abrindo conversa do orçamento #' + atual.nunota + '…')
+    const abriu = await esperarFooter(25000)
     if (!abriu) {
       const skip = (await getLocal('waOrcSkip')) || {}
       skip[atual.nunota] = Date.now()
       await setLocal({ waOrcSkip: skip, waOrcAtual: null })
+      statusPP('conversa não abriu para #' + atual.nunota + ' — número pode não ter WhatsApp.', '#c0392b')
       return
     }
+    statusPP('digitando orçamento #' + atual.nunota + '…')
     const ok = await enviar(atual.mensagem)
     if (ok) {
       // Confirma pelo service worker; se falhar, o hash continua pendente e reenvia depois.
       await chamarApi({ type: 'orcConfirmar', nunota: atual.nunota, hash: atual.hash })
+      statusPP('orçamento #' + atual.nunota + ' enviado ✓', '#1f9d6b')
+    } else {
+      statusPP('não consegui digitar/enviar #' + atual.nunota + '.', '#c0392b')
     }
     await setLocal({ waOrcAtual: null })
   } finally {
@@ -203,7 +227,8 @@ async function pollOrcamentos() {
   if (await getLocal('waOrcAtual')) return // envio em andamento (aguardando navegação)
 
   const resp = await chamarApi({ type: 'orcPendentes' })
-  if (!resp || !resp.ok) return
+  if (!resp) { statusPP('service worker não respondeu — recarregue a extensão.', '#c0392b'); return }
+  if (!resp.ok) { statusPP('erro ao consultar o servidor (HTTP ' + (resp.status || '?') + ').', '#c0392b'); return }
   const lista = resp.data || []
   if (!lista.length) return
 
@@ -213,6 +238,7 @@ async function pollOrcamentos() {
   if (!cand) return
 
   await setLocal({ waOrcAtual: { nunota: cand.nunota, hash: cand.hash, telefone: cand.telefone, mensagem: cand.mensagem, ts: Date.now() } })
+  statusPP('encontrei orçamento #' + cand.nunota + ' → abrindo ' + cand.telefone + '…')
   // Abre a conversa do número (mesmo não salvo). O reload continua o envio.
   location.href = 'https://web.whatsapp.com/send?phone=' + encodeURIComponent(cand.telefone)
 }
@@ -223,3 +249,11 @@ setInterval(() => { ciclo().catch(() => {}) }, 5000)
 // Envio de orçamentos: primeiro completa um pendente pós-navegação, depois busca novos.
 ;(async () => { try { await completarOrcamentoPendente() } catch (e) {} })()
 setInterval(() => { pollOrcamentos().catch(() => {}) }, 20000)
+
+// Sinaliza que a extensão está ativa (some depois de alguns segundos).
+setTimeout(() => {
+  if (cfgApi.orcamentoEnabled) {
+    statusPP('ativa — monitorando orçamentos a cada 20s.', '#5865f2')
+    setTimeout(() => { const el = document.getElementById('pp-status'); if (el && /monitorando/.test(el.textContent)) el.remove() }, 6000)
+  }
+}, 4000)
