@@ -157,7 +157,7 @@ class IntegracaoController extends Controller
         foreach ($itens as $it) {
             $qtd = rtrim(rtrim(number_format((float) $it->QTDNEG, 3, ',', '.'), '0'), ',');
             $sabor = !empty($it->DESCRSABOR) ? " ({$it->DESCRSABOR})" : '';
-            $linhas[] = "• {$qtd}x {$it->DESCRPROD}{$sabor}"; // sem valor unitário
+            $linhas[] = "• {$qtd} - {$it->DESCRPROD}{$sabor}"; // sem valor unitário
         }
         $linhas[] = '';
         $linhas[] = '*Total: ' . $this->brl($cab->VLRTOT) . '*';
