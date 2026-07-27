@@ -18,9 +18,10 @@ Lê os contatos das conversas do **WhatsApp Web** e cadastra como clientes no Pe
 ## Usar
 1. Abra o **web.whatsapp.com** numa aba e deixe as conversas carregarem.
 2. Clique no ícone da extensão. Há duas opções:
-   - **Capturar contato aberto**: abra a conversa de um contato e clique aqui — envia **só** aquele contato (lido do cabeçalho da conversa).
+   - **Capturar contato aberto**: abra a conversa de um contato e clique aqui — a extensão **abre o detalhe do contato** e copia **nome e número** reais (funciona para contato salvo, cujo cabeçalho mostra só o nome).
    - **Sincronizar contatos do WhatsApp**: rola a lista de conversas e envia **todos** os contatos de uma vez.
-3. Repetidos (mesmo telefone) **não são duplicados**.
+3. O número é salvo **sem o DDI** — só **DDD + número** (ex.: `(65) 98888-7777`).
+4. Repetidos (mesmo DDD+número, com ou sem DDI) **não são duplicados**; se o nome/número mudou, o cadastro é **atualizado**.
 
 ## Resposta automática (por DDD)
 A extensão pode **monitorar as conversas** e responder sozinha quem tem DDD diferente do que você atende.

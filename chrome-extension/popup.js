@@ -68,6 +68,14 @@ async function scrapeWhatsApp() {
   const pane = document.querySelector('#pane-side')
   const seen = new Map()
   const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
+  // Ignora o DDI (55) e guarda só DDD + número, formatado.
+  const soDddNumero = (t) => {
+    let d = (t || '').replace(/\D/g, '')
+    if (d.length >= 12 && d.startsWith('55')) d = d.slice(2)
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+    return d
+  }
 
   const collect = () => {
     document.querySelectorAll('#pane-side [role="row"], #pane-side div[role="listitem"]').forEach((row) => {
@@ -75,7 +83,7 @@ async function scrapeWhatsApp() {
       if (!span) return
       const t = (span.getAttribute('title') || span.textContent || '').trim()
       if (!t || seen.has(t)) return
-      seen.set(t, isPhone(t) ? { name: '', phone: t } : { name: t, phone: '' })
+      seen.set(t, isPhone(t) ? { name: '', phone: soDddNumero(t) } : { name: t, phone: '' })
     })
   }
 
@@ -94,17 +102,62 @@ async function scrapeWhatsApp() {
   return [...seen.values()]
 }
 
-// Função injetada para ler o contato da conversa aberta (cabeçalho do #main).
-// No WhatsApp Web atual o nome do contato no cabeçalho fica em span[dir="auto"]
-// (o antigo span[title] deixou de existir ali). Tenta title e cai para textContent.
-function scrapeOpenChat() {
+// Captura o contato da conversa aberta: abre o painel de detalhe (clicando no
+// cabeçalho) e copia o NOME e o NÚMERO reais de lá — necessário porque o
+// cabeçalho de contatos salvos mostra só o nome. Ignora o DDI (guarda DDD+número).
+async function scrapeOpenChat() {
+  const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
+  const soDddNumero = (t) => {
+    let d = (t || '').replace(/\D/g, '')
+    if (d.length >= 12 && d.startsWith('55')) d = d.slice(2)
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+    return d
+  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  const clickSeq = (el) => {
+    const r = el.getBoundingClientRect()
+    for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
+      el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window, clientX: r.x + 10, clientY: r.y + 10 }))
+  }
+
   const header = document.querySelector('#main header')
   if (!header) return null
-  const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
-  const span = header.querySelector('span[dir="auto"][title]') || header.querySelector('span[dir="auto"]')
-  const t = span ? (span.getAttribute('title') || span.textContent || '').trim() : ''
-  if (!t) return null
-  return isPhone(t) ? { name: '', phone: t } : { name: t, phone: '' }
+  const headSpan = header.querySelector('span[dir="auto"]')
+  let nome = headSpan ? (headSpan.getAttribute('title') || headSpan.textContent || '').trim() : ''
+
+  // Abre o painel de detalhe do contato.
+  clickSeq(header.querySelector('div[role="button"]') || header)
+  await sleep(1400)
+
+  // Acha o painel "Dados do contato" e sobe até o ancestral que contém um telefone.
+  let numero = ''
+  const titulo = [...document.querySelectorAll('span, div')].find(
+    (e) => /^(Dados do contato|Contact info|Dados da empresa)$/i.test((e.textContent || '').trim()) && e.children.length === 0
+  )
+  if (titulo) {
+    let panel = titulo
+    for (let i = 0; i < 12 && panel.parentElement; i++) {
+      panel = panel.parentElement
+      const fone = [...panel.querySelectorAll('span')].map((s) => (s.textContent || '').trim()).find((t) => isPhone(t) && t.length <= 22)
+      if (fone) {
+        numero = fone
+        const np = [...panel.querySelectorAll('span[dir="auto"]')].map((s) => (s.textContent || '').trim()).find((t) => t && !isPhone(t) && t.length < 40)
+        if (np) nome = np
+        break
+      }
+    }
+  }
+  // Fecha o painel.
+  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+  // Contato não salvo: o próprio nome do cabeçalho é o número.
+  if (!numero && isPhone(nome)) numero = nome
+
+  const phone = soDddNumero(numero)
+  const name = isPhone(nome) ? '' : nome
+  if (!name && !phone) return null
+  return { name, phone }
 }
 
 // Envia os contatos ao sistema e mostra o resultado. Retorna true em sucesso.
@@ -119,7 +172,7 @@ async function enviar(url, token, contatos, lidosLabel) {
     if (r.status === 401) { show('Token inválido. Confira o token de integração.', 'err'); return false }
     if (!r.ok) { show('Erro do servidor: HTTP ' + r.status, 'err'); return false }
     const d = (await r.json()).data
-    show(`Concluído! ${contatos.length} ${lidosLabel} · ${d.criados} novos · ${d.existentes} já existiam · ${d.ignorados} ignorados.`, 'ok')
+    show(`Concluído! ${contatos.length} ${lidosLabel} · ${d.criados} novos · ${d.atualizados ?? 0} atualizados · ${d.existentes} iguais · ${d.ignorados} ignorados.`, 'ok')
     return true
   } catch (e) {
     show('Falha de conexão com ' + url + ': ' + e.message, 'err')

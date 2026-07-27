@@ -43,17 +43,33 @@ class IntegracaoController extends Controller
     }
 
     // ---------- Recepção de contatos (auth por token de integração) ----------
+    // Só o DDD + número (remove o DDI 55). Ex.: 556593565802 -> 6593565802.
+    private function soDddNumero(?string $tel): string
+    {
+        $d = preg_replace('/\D/', '', (string) $tel);
+        if (strlen($d) >= 12 && str_starts_with($d, '55')) $d = substr($d, 2);
+        return $d;
+    }
+
+    private function formatarTelefone(string $ddd): string
+    {
+        if (strlen($ddd) === 11) return '(' . substr($ddd, 0, 2) . ') ' . substr($ddd, 2, 5) . '-' . substr($ddd, 7);
+        if (strlen($ddd) === 10) return '(' . substr($ddd, 0, 2) . ') ' . substr($ddd, 2, 4) . '-' . substr($ddd, 6);
+        return $ddd;
+    }
+
     private function upsertCliente(int $emp, string $canal, ?string $name, ?string $phone): array
     {
         $name = trim((string) $name);
-        $phoneDigits = preg_replace('/\D/', '', (string) $phone);
-        if ($name === '' && $phoneDigits === '') return ['ok' => false, 'motivo' => 'sem dados'];
+        $norm = $this->soDddNumero($phone);                 // DDD+número, sem DDI
+        $phoneFmt = $norm !== '' ? $this->formatarTelefone($norm) : null;
+        if ($name === '' && $norm === '') return ['ok' => false, 'motivo' => 'sem dados'];
 
-        // Deduplica por telefone (dígitos) dentro da empresa.
+        // Deduplica pelo DDD+número (compara o final dos dígitos, ignorando o DDI).
         $existing = null;
-        if ($phoneDigits !== '') {
+        if ($norm !== '') {
             $existing = DB::table('TGFPAR')->where('CODEMP', $emp)
-                ->whereRaw("REGEXP_REPLACE(COALESCE(TELEFONE,''), '[^0-9]', '') = ?", [$phoneDigits])
+                ->whereRaw("RIGHT(REGEXP_REPLACE(COALESCE(TELEFONE,''), '[^0-9]', ''), ?) = ?", [strlen($norm), $norm])
                 ->first();
         }
         if (!$existing && $name !== '') {
@@ -61,18 +77,26 @@ class IntegracaoController extends Controller
         }
 
         if ($existing) {
-            // Completa nome/telefone se estiverem vazios.
+            // Atualiza nome/telefone quando estiverem diferentes do recebido.
             $upd = [];
-            if ($name !== '' && !$existing->NOMEPARC) $upd['NOMEPARC'] = $name;
-            if ($phone && !$existing->TELEFONE) $upd['TELEFONE'] = $phone;
-            if ($upd) DB::table('TGFPAR')->where('CODPARC', $existing->CODPARC)->update($upd);
-            return ['ok' => true, 'novo' => false, 'id' => (int) $existing->CODPARC];
+            if ($name !== '' && $existing->NOMEPARC !== $name) $upd['NOMEPARC'] = $name;
+            // Normaliza o telefone gravado para DDD+número (sem DDI) quando diferir.
+            if ($phoneFmt && $existing->TELEFONE !== $phoneFmt) $upd['TELEFONE'] = $phoneFmt;
+            if ($upd) {
+                DB::table('TGFPAR')->where('CODPARC', $existing->CODPARC)->update($upd);
+                DB::table('TSIAUD')->insert([
+                    'CODEMP' => $emp, 'ENTIDADE' => 'TGFPAR', 'CHAVEREG' => "CODPARC={$existing->CODPARC}",
+                    'ACAO' => 'UPDATE', 'ORIGEM' => 'INTEGRACAO', 'CANAL' => $canal,
+                    'OBSERVACAO' => 'Contato atualizado via extensão',
+                ]);
+            }
+            return ['ok' => true, 'novo' => false, 'atualizado' => (bool) $upd, 'id' => (int) $existing->CODPARC];
         }
 
         $id = DB::table('TGFPAR')->insertGetId([
             'CODEMP' => $emp,
-            'NOMEPARC' => $name !== '' ? $name : $phone,
-            'TELEFONE' => $phone,
+            'NOMEPARC' => $name !== '' ? $name : $phoneFmt,
+            'TELEFONE' => $phoneFmt,
             'TIPPESSOA' => 'F',
             'CLIENTE' => 'S',
             'ATIVO' => 'S',
@@ -84,7 +108,7 @@ class IntegracaoController extends Controller
             'ACAO' => 'INSERT', 'ORIGEM' => 'INTEGRACAO', 'CANAL' => $canal,
             'OBSERVACAO' => 'Contato importado via extensão',
         ]);
-        return ['ok' => true, 'novo' => true, 'id' => $id];
+        return ['ok' => true, 'novo' => true, 'atualizado' => false, 'id' => $id];
     }
 
     public function criarCliente(Request $r)
@@ -103,7 +127,7 @@ class IntegracaoController extends Controller
     {
         $d = preg_replace('/\D/', '', (string) $tel);
         if ($d === '') return null;
-        if (!str_starts_with($d, '55') && strlen($d) >= 10 && strlen($d) <= 11) $d = '55' . $d;
+        if (strlen($d) === 10 || strlen($d) === 11) $d = '55' . $d; // adiciona o DDI para envio
         return strlen($d) >= 12 ? $d : null;
     }
 
@@ -213,16 +237,19 @@ class IntegracaoController extends Controller
         $emp = (int) $r->attributes->get('codemp');
         $canal = (string) $r->attributes->get('canal');
         $contatos = $r->input('contatos', []);
-        $criados = 0; $existentes = 0; $ignorados = 0;
+        $criados = 0; $existentes = 0; $atualizados = 0; $ignorados = 0;
         foreach ($contatos as $c) {
             $res = $this->upsertCliente($emp, $canal, $c['name'] ?? null, $c['phone'] ?? null);
             if (!$res['ok']) { $ignorados++; continue; }
-            $res['novo'] ? $criados++ : $existentes++;
+            if ($res['novo']) $criados++;
+            elseif (!empty($res['atualizado'])) $atualizados++;
+            else $existentes++;
         }
         return response()->json(['data' => [
             'recebidos' => count($contatos),
             'criados' => $criados,
             'existentes' => $existentes,
+            'atualizados' => $atualizados,
             'ignorados' => $ignorados,
         ]]);
     }
