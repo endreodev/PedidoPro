@@ -157,6 +157,8 @@ chrome.storage.onChanged.addListener(carregarApi)
 
 const getLocal = (k) => new Promise((r) => chrome.storage.local.get([k], (d) => r(d[k])))
 const setLocal = (o) => new Promise((r) => chrome.storage.local.set(o, r))
+// Chama a API pelo service worker (a página do WhatsApp bloqueia fetch externo por CSP).
+const chamarApi = (msg) => new Promise((r) => chrome.runtime.sendMessage(msg, r))
 
 async function esperarFooter(timeoutMs) {
   const fim = Date.now() + timeoutMs
@@ -185,14 +187,8 @@ async function completarOrcamentoPendente() {
   }
   const ok = await enviar(atual.mensagem)
   if (ok) {
-    const { url, token } = cfgApi.token ? cfgApi : { url: (await getLocal('url') || '').replace(/\/+$/, ''), token: await getLocal('token') }
-    try {
-      await fetch(url + '/api/v1/integracao/orcamentos-enviados', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Integration-Key': token },
-        body: JSON.stringify({ nunota: atual.nunota, hash: atual.hash }),
-      })
-    } catch (e) { /* tenta confirmar de novo no próximo poll (hash ainda pendente) */ }
+    // Confirma pelo service worker; se falhar, o hash continua pendente e reenvia depois.
+    await chamarApi({ type: 'orcConfirmar', nunota: atual.nunota, hash: atual.hash })
   }
   await setLocal({ waOrcAtual: null })
 }
@@ -201,14 +197,9 @@ async function pollOrcamentos() {
   if (ocupado || !cfgApi.orcamentoEnabled || !cfgApi.url || !cfgApi.token) return
   if (await getLocal('waOrcAtual')) return // envio em andamento (aguardando navegação)
 
-  let lista = []
-  try {
-    const r = await fetch(cfgApi.url + '/api/v1/integracao/orcamentos-pendentes', {
-      headers: { 'X-Integration-Key': cfgApi.token },
-    })
-    if (!r.ok) return
-    lista = (await r.json()).data || []
-  } catch (e) { return }
+  const resp = await chamarApi({ type: 'orcPendentes' })
+  if (!resp || !resp.ok) return
+  const lista = resp.data || []
   if (!lista.length) return
 
   const skip = (await getLocal('waOrcSkip')) || {}
