@@ -187,44 +187,45 @@ async function esperarFooter(timeoutMs) {
   return false
 }
 
-// Após navegar para send?phone, completa o envio do orçamento pendente.
-async function completarOrcamentoPendente() {
-  const atual = await getLocal('waOrcAtual')
-  if (!atual) return
-  // Segurança: só completa se a navegação foi recente (evita envio errado em reload solto).
-  if (!atual.ts || Date.now() - atual.ts > 90000) {
-    await setLocal({ waOrcAtual: null })
-    return
+// Rola a lista de conversas procurando a do cliente (por nome exato ou pelo
+// número, ignorando o DDI) e clica para abrir. Sem navegação — tudo na mesma página.
+async function acharEClicarConversa(nome, telefone) {
+  const pane = document.querySelector('#pane-side')
+  if (!pane) return false
+  const nomeAlvo = (nome || '').trim().toLowerCase()
+  const alvoDigits = (telefone || '').replace(/\D/g, '').replace(/^55/, '')
+  const clickSeq = (el) => {
+    const r = el.getBoundingClientRect()
+    for (const e of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
+      el.dispatchEvent(new MouseEvent(e, { bubbles: true, cancelable: true, view: window, clientX: r.x + 30, clientY: r.y + 30 }))
   }
-  ocupado = true // impede o monitor de DDD de mexer na conversa durante o envio
-  try {
-    statusPP('abrindo conversa do orçamento #' + atual.nunota + '…')
-    const abriu = await esperarFooter(25000)
-    if (!abriu) {
-      const skip = (await getLocal('waOrcSkip')) || {}
-      skip[atual.nunota] = Date.now()
-      await setLocal({ waOrcSkip: skip, waOrcAtual: null })
-      statusPP('conversa não abriu para #' + atual.nunota + ' — número pode não ter WhatsApp.', '#c0392b')
-      return
+  const tentar = () => {
+    for (const row of pane.querySelectorAll('[role="row"]')) {
+      const span = row.querySelector('span[dir="auto"][title]')
+      const t = span ? (span.getAttribute('title') || '').trim() : ''
+      if (!t) continue
+      const td = t.replace(/\D/g, '').replace(/^55/, '')
+      const mNome = nomeAlvo && t.toLowerCase() === nomeAlvo
+      const mTel = alvoDigits && td && (td === alvoDigits || td.endsWith(alvoDigits) || alvoDigits.endsWith(td))
+      if (mNome || mTel) { clickSeq(row.querySelector('[data-testid="cell-frame-container"]') || row); return true }
     }
-    statusPP('digitando orçamento #' + atual.nunota + '…')
-    const ok = await enviar(atual.mensagem)
-    if (ok) {
-      // Confirma pelo service worker; se falhar, o hash continua pendente e reenvia depois.
-      await chamarApi({ type: 'orcConfirmar', nunota: atual.nunota, hash: atual.hash })
-      statusPP('orçamento #' + atual.nunota + ' enviado ✓', '#1f9d6b')
-    } else {
-      statusPP('não consegui digitar/enviar #' + atual.nunota + '.', '#c0392b')
-    }
-    await setLocal({ waOrcAtual: null })
-  } finally {
-    ocupado = false
+    return false
   }
+  pane.scrollTo(0, 0)
+  await sleep(300)
+  let last = -1
+  for (let i = 0; i < 80; i++) {
+    if (tentar()) return true
+    pane.scrollBy(0, pane.clientHeight * 0.8)
+    await sleep(220)
+    if (pane.scrollTop === last) break // chegou ao fim da lista
+    last = pane.scrollTop
+  }
+  return tentar()
 }
 
 async function pollOrcamentos() {
   if (ocupado || !cfgApi.orcamentoEnabled || !cfgApi.url || !cfgApi.token) return
-  if (await getLocal('waOrcAtual')) return // envio em andamento (aguardando navegação)
 
   const resp = await chamarApi({ type: 'orcPendentes' })
   if (!resp) { statusPP('service worker não respondeu — recarregue a extensão.', '#c0392b'); return }
@@ -237,17 +238,35 @@ async function pollOrcamentos() {
   const cand = lista.find((o) => !skip[o.nunota] || agora - skip[o.nunota] > 3600000)
   if (!cand) return
 
-  await setLocal({ waOrcAtual: { nunota: cand.nunota, hash: cand.hash, telefone: cand.telefone, mensagem: cand.mensagem, ts: Date.now() } })
-  statusPP('encontrei orçamento #' + cand.nunota + ' → abrindo ' + cand.telefone + '…')
-  // Abre a conversa do número (mesmo não salvo). O reload continua o envio.
-  location.href = 'https://web.whatsapp.com/send?phone=' + encodeURIComponent(cand.telefone)
+  ocupado = true
+  try {
+    const quem = cand.cliente || cand.telefone
+    statusPP('procurando conversa de ' + quem + ' (orçamento #' + cand.nunota + ')…')
+    const abriu = await acharEClicarConversa(cand.cliente, cand.telefone)
+    if (!abriu) {
+      const s = (await getLocal('waOrcSkip')) || {}
+      s[cand.nunota] = Date.now()
+      await setLocal({ waOrcSkip: s })
+      statusPP('não encontrei a conversa de ' + quem + ' na lista.', '#c0392b')
+      return
+    }
+    if (!(await esperarFooter(15000))) { statusPP('a conversa de ' + quem + ' não abriu.', '#c0392b'); return }
+    statusPP('digitando orçamento #' + cand.nunota + '…')
+    const enviado = await enviar(cand.mensagem)
+    if (enviado) {
+      await chamarApi({ type: 'orcConfirmar', nunota: cand.nunota, hash: cand.hash })
+      statusPP('orçamento #' + cand.nunota + ' enviado para ' + quem + ' ✓', '#1f9d6b')
+    } else {
+      statusPP('não consegui digitar/enviar #' + cand.nunota + '.', '#c0392b')
+    }
+  } finally {
+    ocupado = false
+  }
 }
 
 // Monitor de resposta automática por DDD.
 setInterval(() => { ciclo().catch(() => {}) }, 5000)
-
-// Envio de orçamentos: primeiro completa um pendente pós-navegação, depois busca novos.
-;(async () => { try { await completarOrcamentoPendente() } catch (e) {} })()
+// Envio de orçamentos (busca a conversa na lista, sem navegar).
 setInterval(() => { pollOrcamentos().catch(() => {}) }, 20000)
 
 // Sinaliza que a extensão está ativa (some depois de alguns segundos).
