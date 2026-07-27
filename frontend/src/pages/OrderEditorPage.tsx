@@ -97,14 +97,21 @@ export default function OrderEditorPage() {
       <section className="bg-surface border border-border rounded-lg shadow-card p-5">
         <div className="flex items-center gap-2 mb-3 text-text-secondary"><User className="w-4 h-4" /><h3 className="text-sm font-700 uppercase tracking-wide">Cliente</h3></div>
         {customer ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-700 text-text-primary">{customer.name}</p>
-              <p className="text-sm text-text-secondary">
-                {[customer.document, customer.phone, customer.city].filter(Boolean).join(' · ') || 'Sem dados adicionais'}
-              </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-700 text-text-primary">{customer.name}</p>
+                <p className="text-sm text-text-secondary">
+                  {[customer.document, customer.phone, customer.city].filter(Boolean).join(' · ') || 'Sem dados adicionais'}
+                </p>
+              </div>
+              <button onClick={() => setCustomerId('')} className="text-sm text-primary font-600">Trocar</button>
             </div>
-            <button onClick={() => setCustomerId('')} className="text-sm text-primary font-600">Trocar</button>
+            {!customer.phone && (
+              <p className="text-xs rounded-md bg-warning/10 text-warning px-3 py-2 border border-warning/30">
+                ⚠️ Cliente sem telefone — este orçamento <b>não será enviado no WhatsApp</b>. Edite o cliente e adicione o número.
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
