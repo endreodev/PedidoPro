@@ -33,11 +33,17 @@ export default function ProductEditorPage() {
   const setTier = (i: number, patch: Partial<PriceTier>) => setTiers((t) => t.map((x, idx) => (idx === i ? { ...x, ...patch } : x)))
   const removeTier = (i: number) => setTiers((t) => t.filter((_, idx) => idx !== i))
 
+  const [flavors, setFlavors] = useState<string[]>(editing?.flavors ?? [])
+  const addFlavor = () => setFlavors((f) => [...f, ''])
+  const setFlavor = (i: number, v: string) => setFlavors((f) => f.map((x, idx) => (idx === i ? v : x)))
+  const removeFlavor = (i: number) => setFlavors((f) => f.filter((_, idx) => idx !== i))
+
   const save = () => {
     if (!company) return
     if (!form.name.trim()) { showToast('Informe o nome', 'error'); return }
     const price_tiers = tiers.filter((t) => t.qty_min > 0)
-    saveProduct({ ...(editing ? { id: editing.id } : {}), ...form, price_tiers, company_id: company.id })
+    const cleanFlavors = flavors.map((f) => f.trim()).filter(Boolean)
+    saveProduct({ ...(editing ? { id: editing.id } : {}), ...form, price_tiers, flavors: cleanFlavors, company_id: company.id })
     showToast(editing ? 'Produto atualizado' : 'Produto criado', 'success')
     navigate('/products')
   }
@@ -92,6 +98,26 @@ export default function ProductEditorPage() {
               </div>
             ))}
             {tiers.length === 0 && <p className="text-sm text-text-secondary">Sem faixas — usa o preço padrão para qualquer quantidade.</p>}
+          </div>
+        </div>
+
+        {/* Grade de sabores */}
+        <div className="mt-6 border-t border-border pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="text-sm font-700 text-text-primary">Grade de sabores</h3>
+              <p className="text-xs text-text-secondary">Se cadastrar sabores, o pedido e o PDV vão pedir a seleção do sabor ao adicionar. Sem sabores = normal.</p>
+            </div>
+            <button type="button" onClick={addFlavor} className="flex items-center gap-1 text-sm text-primary font-600"><Plus className="w-4 h-4" /> Sabor</button>
+          </div>
+          <div className="space-y-2">
+            {flavors.map((f, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input className="input flex-1" placeholder="Ex.: Chocolate, Morango, Ninho" value={f} onChange={(e) => setFlavor(i, e.target.value)} />
+                <button type="button" onClick={() => removeFlavor(i)} className="text-error p-2"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            ))}
+            {flavors.length === 0 && <p className="text-sm text-text-secondary">Sem sabores cadastrados — produto vendido normalmente.</p>}
           </div>
         </div>
 

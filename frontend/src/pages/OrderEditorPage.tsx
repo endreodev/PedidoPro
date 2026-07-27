@@ -6,6 +6,7 @@ import { useAppStore } from '../stores/appStore'
 import { showToast } from '../components/common/Toast'
 import Autocomplete from '../components/common/Autocomplete'
 import CustomerFormModal from '../components/customers/CustomerFormModal'
+import FlavorPickerModal from '../components/common/FlavorPickerModal'
 import { unitPriceForQty } from '../lib/pricing'
 import { Order, OrderItem, OrderPayment, Customer, Product } from '../types'
 
@@ -34,6 +35,7 @@ export default function OrderEditorPage() {
   const [items, setItems] = useState<OrderItem[]>(editing?.items ?? [])
   const [payments, setPayments] = useState<OrderPayment[]>(editing?.payments ?? [])
   const [newCustomerName, setNewCustomerName] = useState<string | null>(null)
+  const [flavorPick, setFlavorPick] = useState<Product | null>(null)
 
   const customer = customers.find((c) => c.id === customerId)
   const total = items.reduce((s, i) => s + i.subtotal, 0)
@@ -53,10 +55,15 @@ export default function OrderEditorPage() {
   }
   // Sempre cria uma nova linha (permite o mesmo produto várias vezes). Ações operam por id da linha.
   const lineId = () => 'it' + Math.random().toString(36).slice(2, 9)
-  const addProduct = (p: Product) => setItems((its) => {
+  const appendItem = (p: Product, flavor?: string) => setItems((its) => {
     const up = unitPriceForQty(p, 1)
-    return [...its, { id: lineId(), product_id: p.id, quantity: 1, unit_price: up, subtotal: up }]
+    return [...its, { id: lineId(), product_id: p.id, quantity: 1, unit_price: up, subtotal: up, flavor }]
   })
+  // Se o produto tem grade de sabores, abre o seletor; senão adiciona direto.
+  const addProduct = (p: Product) => {
+    if (p.flavors && p.flavors.length > 0) { setFlavorPick(p); return }
+    appendItem(p)
+  }
   const setQty = (id: string, qty: number) => setItems((its) => its.map((i) => (i.id === id ? reprice(i, qty) : i)))
   const bump = (id: string, d: number) => setItems((its) => its.map((i) => (i.id === id ? reprice(i, i.quantity + d) : i)))
   const removeItem = (id: string) => setItems((its) => its.filter((i) => i.id !== id))
@@ -160,7 +167,7 @@ export default function OrderEditorPage() {
                 const p = products.find((x) => x.id === i.product_id)
                 return (
                   <tr key={i.id} className="border-b border-border last:border-0">
-                    <td className="py-2 text-text-primary">{p?.name ?? i.product_id}</td>
+                    <td className="py-2 text-text-primary">{p?.name ?? i.product_id}{i.flavor && <span className="ml-1 text-xs font-600 text-primary">· {i.flavor}</span>}</td>
                     <td className="py-2 mono text-right text-text-secondary">{brl(i.unit_price)}</td>
                     <td className="py-2">
                       <div className="flex items-center justify-center gap-1">
@@ -213,6 +220,15 @@ export default function OrderEditorPage() {
           initial={{ name: newCustomerName }}
           onClose={() => setNewCustomerName(null)}
           onSaved={(c) => setCustomerId(c.id)}
+        />
+      )}
+
+      {flavorPick && (
+        <FlavorPickerModal
+          productName={flavorPick.name}
+          flavors={flavorPick.flavors ?? []}
+          onSelect={(f) => { appendItem(flavorPick, f); setFlavorPick(null) }}
+          onClose={() => setFlavorPick(null)}
         />
       )}
     </div>

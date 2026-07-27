@@ -179,6 +179,7 @@ export interface Product {
   stock: number
   min_stock: number
   price_tiers?: PriceTier[]
+  flavors?: string[]
   company_id: string
 }
 
@@ -227,6 +228,7 @@ export interface OrderItem {
   quantity: number
   unit_price: number
   subtotal: number
+  flavor?: string
 }
 
 export interface OrderPayment {

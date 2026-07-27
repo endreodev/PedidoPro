@@ -156,7 +156,8 @@ class IntegracaoController extends Controller
         $linhas[] = ''; // quebra de linha após a saudação
         foreach ($itens as $it) {
             $qtd = rtrim(rtrim(number_format((float) $it->QTDNEG, 3, ',', '.'), '0'), ',');
-            $linhas[] = "• {$qtd}x {$it->DESCRPROD}"; // sem valor unitário
+            $sabor = !empty($it->DESCRSABOR) ? " ({$it->DESCRSABOR})" : '';
+            $linhas[] = "• {$qtd}x {$it->DESCRPROD}{$sabor}"; // sem valor unitário
         }
         $linhas[] = '';
         $linhas[] = '*Total: ' . $this->brl($cab->VLRTOT) . '*';
@@ -185,7 +186,7 @@ class IntegracaoController extends Controller
             $itens = DB::table('TGFITE as i')
                 ->join('TGFPRO as pr', 'pr.CODPROD', '=', 'i.CODPROD')
                 ->where('i.NUNOTA', $cab->NUNOTA)
-                ->select('i.CODPROD', 'i.QTDNEG', 'i.VLRUNIT', 'i.VLRTOT', 'pr.DESCRPROD')
+                ->select('i.CODPROD', 'i.QTDNEG', 'i.VLRUNIT', 'i.VLRTOT', 'i.DESCRSABOR', 'pr.DESCRPROD')
                 ->orderBy('i.SEQUENCIA')->get();
             if ($itens->isEmpty()) continue;
 

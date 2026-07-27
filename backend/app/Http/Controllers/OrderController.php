@@ -20,6 +20,7 @@ class OrderController extends Controller
             'quantity' => (float) $i->QTDNEG,
             'unit_price' => (float) $i->VLRUNIT,
             'subtotal' => (float) $i->VLRTOT,
+            'flavor' => $i->DESCRSABOR ?? '',
         ]);
         $payments = DB::table('TGFPAG')->where('NUNOTA', $c->NUNOTA)->orderBy('SEQUENCIA')->get()->map(fn ($pg) => [
             'id' => (string) $pg->SEQUENCIA,
@@ -53,6 +54,7 @@ class OrderController extends Controller
                 'QTDNEG' => (float) ($it['quantity'] ?? 1),
                 'VLRUNIT' => (float) ($it['unit_price'] ?? 0),
                 'VLRTOT' => (float) ($it['subtotal'] ?? 0),
+                'DESCRSABOR' => !empty($it['flavor']) ? mb_substr((string) $it['flavor'], 0, 80) : null,
             ]);
         }
     }

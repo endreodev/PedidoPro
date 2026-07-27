@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useCaixaStore, resumoCaixa } from '../stores/caixaStore'
 import { showToast } from '../components/common/Toast'
 import Autocomplete from '../components/common/Autocomplete'
+import FlavorPickerModal from '../components/common/FlavorPickerModal'
 import { unitPriceForQty } from '../lib/pricing'
 import { Product, Customer, PaymentForm } from '../types'
 
@@ -13,7 +14,7 @@ const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 const tint = (hex: string) => ({ backgroundColor: `${hex}22`, color: hex })
 const PAY_MAP: Record<PaymentForm['type'], string> = { cash: 'dinheiro', pix: 'pix', card: 'cartao', boleto: 'boleto', transfer: 'transferencia' }
 
-interface CartLine { product: Product; qty: number }
+interface CartLine { id: string; product: Product; qty: number; flavor?: string }
 
 export default function PDVPage() {
   const company = useAppStore((s) => s.currentCompany)
@@ -37,6 +38,7 @@ export default function PDVPage() {
 
   const [groupId, setGroupId] = useState<string>('all')
   const [cart, setCart] = useState<CartLine[]>([])
+  const [flavorPick, setFlavorPick] = useState<Product | null>(null)
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [pickCustomer, setPickCustomer] = useState(false)
   const [pay, setPay] = useState(false)
@@ -54,19 +56,25 @@ export default function PDVPage() {
   const total = cart.reduce((s, l) => s + lineUnit(l) * l.qty, 0)
   const customer = customers.find((c) => c.id === customerId)
 
-  const add = (p: Product) => setCart((c) => {
-    const found = c.find((l) => l.product.id === p.id)
-    return found ? c.map((l) => (l.product.id === p.id ? { ...l, qty: l.qty + 1 } : l)) : [...c, { product: p, qty: 1 }]
+  const lineId = () => 'l' + Math.random().toString(36).slice(2, 9)
+  const addLine = (p: Product, flavor?: string) => setCart((c) => {
+    const found = c.find((l) => l.product.id === p.id && (l.flavor ?? '') === (flavor ?? ''))
+    return found ? c.map((l) => (l === found ? { ...l, qty: l.qty + 1 } : l)) : [...c, { id: lineId(), product: p, qty: 1, flavor }]
   })
-  const setQty = (id: string, d: number) => setCart((c) => c.map((l) => (l.product.id === id ? { ...l, qty: Math.max(1, l.qty + d) } : l)))
-  const removeLine = (id: string) => setCart((c) => c.filter((l) => l.product.id !== id))
+  // Produto com grade de sabores abre o seletor; senão vai direto pro carrinho.
+  const add = (p: Product) => {
+    if (p.flavors && p.flavors.length > 0) { setFlavorPick(p); return }
+    addLine(p)
+  }
+  const setQty = (id: string, d: number) => setCart((c) => c.map((l) => (l.id === id ? { ...l, qty: Math.max(1, l.qty + d) } : l)))
+  const removeLine = (id: string) => setCart((c) => c.filter((l) => l.id !== id))
 
   const confirmPay = () => {
     if (!company || !aberto || !payMethod) return
     const forma = paymentForms.find((f) => f.id === payMethod)
     saveOrder({
       number: String(Math.floor(1000 + total)), customer_id: customerId ?? '', status: 'completed',
-      items: cart.map((l, i) => ({ id: `it${i}`, product_id: l.product.id, quantity: l.qty, unit_price: lineUnit(l), subtotal: lineUnit(l) * l.qty })),
+      items: cart.map((l, i) => ({ id: `it${i}`, product_id: l.product.id, quantity: l.qty, unit_price: lineUnit(l), subtotal: lineUnit(l) * l.qty, flavor: l.flavor })),
       subtotal: total, discount: 0, total, created_at: new Date().toISOString(), company_id: company.id,
     })
     cart.forEach((l) => adjustStock(l.product.id, -l.qty))
@@ -173,13 +181,13 @@ export default function PDVPage() {
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {cart.map((l) => (
-              <div key={l.product.id} className="flex items-center gap-2">
-                <div className="flex-1"><p className="text-sm font-600 text-text-primary">{l.product.name}</p><p className="text-xs text-text-secondary mono">{brl(lineUnit(l))} /un.</p></div>
-                <button onClick={() => setQty(l.product.id, -1)} className="w-6 h-6 rounded-full border border-border flex items-center justify-center"><Minus className="w-3 h-3" /></button>
+              <div key={l.id} className="flex items-center gap-2">
+                <div className="flex-1"><p className="text-sm font-600 text-text-primary">{l.product.name}{l.flavor && <span className="ml-1 text-xs font-600 text-primary">· {l.flavor}</span>}</p><p className="text-xs text-text-secondary mono">{brl(lineUnit(l))} /un.</p></div>
+                <button onClick={() => setQty(l.id, -1)} className="w-6 h-6 rounded-full border border-border flex items-center justify-center"><Minus className="w-3 h-3" /></button>
                 <span className="mono w-6 text-center">{l.qty}</span>
-                <button onClick={() => setQty(l.product.id, 1)} className="w-6 h-6 rounded-full border border-border flex items-center justify-center"><Plus className="w-3 h-3" /></button>
+                <button onClick={() => setQty(l.id, 1)} className="w-6 h-6 rounded-full border border-border flex items-center justify-center"><Plus className="w-3 h-3" /></button>
                 <span className="mono text-sm w-16 text-right">{brl(lineUnit(l) * l.qty)}</span>
-                <button onClick={() => removeLine(l.product.id)} className="text-error"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => removeLine(l.id)} className="text-error"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
             {cart.length === 0 && <p className="text-sm text-text-secondary text-center mt-8">Carrinho vazio</p>}
@@ -270,6 +278,15 @@ export default function PDVPage() {
           <button onClick={() => { fechar(contado); showToast('Caixa fechado', 'success'); setFecharOpen(false); setCountedCash('') }}
             className="w-full h-11 mt-4 rounded-md bg-primary text-white font-700">Confirmar fechamento</button>
         </Modal>
+      )}
+
+      {flavorPick && (
+        <FlavorPickerModal
+          productName={flavorPick.name}
+          flavors={flavorPick.flavors ?? []}
+          onSelect={(f) => { addLine(flavorPick, f); setFlavorPick(null) }}
+          onClose={() => setFlavorPick(null)}
+        />
       )}
     </div>
   )
