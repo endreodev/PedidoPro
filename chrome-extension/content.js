@@ -178,19 +178,24 @@ async function completarOrcamentoPendente() {
     await setLocal({ waOrcAtual: null })
     return
   }
-  const abriu = await esperarFooter(20000)
-  if (!abriu) {
-    const skip = (await getLocal('waOrcSkip')) || {}
-    skip[atual.nunota] = Date.now()
-    await setLocal({ waOrcSkip: skip, waOrcAtual: null })
-    return
+  ocupado = true // impede o monitor de DDD de mexer na conversa durante o envio
+  try {
+    const abriu = await esperarFooter(20000)
+    if (!abriu) {
+      const skip = (await getLocal('waOrcSkip')) || {}
+      skip[atual.nunota] = Date.now()
+      await setLocal({ waOrcSkip: skip, waOrcAtual: null })
+      return
+    }
+    const ok = await enviar(atual.mensagem)
+    if (ok) {
+      // Confirma pelo service worker; se falhar, o hash continua pendente e reenvia depois.
+      await chamarApi({ type: 'orcConfirmar', nunota: atual.nunota, hash: atual.hash })
+    }
+    await setLocal({ waOrcAtual: null })
+  } finally {
+    ocupado = false
   }
-  const ok = await enviar(atual.mensagem)
-  if (ok) {
-    // Confirma pelo service worker; se falhar, o hash continua pendente e reenvia depois.
-    await chamarApi({ type: 'orcConfirmar', nunota: atual.nunota, hash: atual.hash })
-  }
-  await setLocal({ waOrcAtual: null })
 }
 
 async function pollOrcamentos() {

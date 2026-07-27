@@ -60,6 +60,23 @@ $('save').onclick = () => {
   chrome.storage.local.set({ url, token, orcamentoEnabled }, () => show('Configuração salva.', 'ok'))
 }
 
+// Diagnóstico: testa o caminho real (service worker -> API) e mostra os pendentes.
+$('testarOrc').onclick = () => {
+  const url = $('url').value.trim().replace(/\/+$/, '')
+  const token = $('token').value.trim()
+  if (!url || !token) { show('Preencha URL e token e clique em Salvar antes de testar.', 'err'); return }
+  chrome.storage.local.set({ url, token })
+  show('Consultando o servidor…', 'ok')
+  chrome.runtime.sendMessage({ type: 'orcPendentes' }, (resp) => {
+    if (chrome.runtime.lastError) { show('Service worker não respondeu (' + chrome.runtime.lastError.message + '). Recarregue a extensão em chrome://extensions.', 'err'); return }
+    if (!resp) { show('Sem resposta do service worker. Recarregue a extensão (v1.6.0).', 'err'); return }
+    if (!resp.ok) { show('Falha na API (HTTP ' + (resp.status || '?') + ') ' + (resp.error || ''), 'err'); return }
+    const d = resp.data || []
+    if (!d.length) { show('Conexão OK. Nenhum orçamento pendente agora (verifique status "orçamento" e telefone do cliente).', 'ok'); return }
+    show(`Conexão OK! ${d.length} pendente(s). Ex.: ${d[0].cliente} → ${d[0].telefone}. Abra o WhatsApp Web para enviar.`, 'ok')
+  })
+}
+
 // Função injetada na página do WhatsApp Web para ler os contatos da lista.
 // A lista é virtualizada: as conversas são [role="row"] dentro do #pane-side
 // (que também é o container de rolagem), e o nome fica em span[dir="auto"][title].
