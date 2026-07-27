@@ -58,6 +58,8 @@ function marcarRespondido(chave) {
 }
 
 // Escreve o texto na caixa do WhatsApp (substitui qualquer rascunho) — só DOM.
+// Usa um evento de "paste" porque o editor (Lexical) preserva as quebras de linha
+// do texto colado; o execCommand('insertText') junta tudo numa linha só.
 function escrever(input, txt) {
   input.focus()
   const sel = window.getSelection()
@@ -65,7 +67,9 @@ function escrever(input, txt) {
   range.selectNodeContents(input)
   sel.removeAllRanges()
   sel.addRange(range)
-  document.execCommand('insertText', false, txt)
+  const dt = new DataTransfer()
+  dt.setData('text/plain', txt)
+  input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
 }
 
 async function abrirConversa(row) {

@@ -150,12 +150,13 @@ class IntegracaoController extends Controller
     {
         $linhas = [];
         $linhas[] = "*Orçamento Nº {$cab->NUNOTA}*";
+        $linhas[] = ''; // quebra de linha após o número
         $nome = trim((string) $nome);
         $linhas[] = 'Olá' . ($nome !== '' ? " {$nome}" : '') . '! Segue o seu orçamento:';
-        $linhas[] = '';
+        $linhas[] = ''; // quebra de linha após a saudação
         foreach ($itens as $it) {
             $qtd = rtrim(rtrim(number_format((float) $it->QTDNEG, 3, ',', '.'), '0'), ',');
-            $linhas[] = "• {$qtd}x {$it->DESCRPROD} — " . $this->brl($it->VLRTOT);
+            $linhas[] = "• {$qtd}x {$it->DESCRPROD}"; // sem valor unitário
         }
         $linhas[] = '';
         $linhas[] = '*Total: ' . $this->brl($cab->VLRTOT) . '*';
