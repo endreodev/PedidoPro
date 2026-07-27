@@ -11,7 +11,7 @@ Lê os contatos das conversas do **WhatsApp Web** e cadastra como clientes no Pe
 ## Configurar
 1. No sistema, entre como **Administrador** → **Integrações** → **Gerar token** e copie o token (`pp_...`). Ele é mostrado **uma única vez**.
 2. Clique no ícone da extensão:
-   - **URL do sistema**: `https://thays.ibyt.com.br` (ou outra — é configurável).
+   - **URL do sistema**: `https://pedidos.ibyt.com.br` (ou outra — a extensão usa exatamente o domínio configurado aqui).
    - **Token**: cole o token gerado.
    - Clique em **Salvar configuração**.
 

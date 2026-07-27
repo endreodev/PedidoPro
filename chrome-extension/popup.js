@@ -7,6 +7,13 @@ function show(msg, cls) {
   s.style.display = 'block'
 }
 
+const DEFAULT_URL = 'https://pedidos.ibyt.com.br'
+// Corrige domínios antigos salvos e usa o padrão quando vazio.
+const fixUrl = (u) => {
+  u = (u || '').replace('thays.ibyt.com.br', 'pedidos.ibyt.com.br').replace(/\/+$/, '')
+  return u || DEFAULT_URL
+}
+
 const MSG_PADRAO =
   'Olá! Agradecemos muito o seu contato 💜 No momento, nosso atendimento é apenas em Cuiabá e Várzea Grande, no estado de Mato Grosso. Para acompanhar as novidades e fazer seu pedido, siga o nosso Instagram: {instagram}'
 
@@ -14,7 +21,9 @@ const MSG_PADRAO =
 chrome.storage.local.get(
   ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem', 'orcamentoEnabled'],
   (d) => {
-    $('url').value = d.url || 'https://thays.ibyt.com.br'
+    const url = fixUrl(d.url)
+    $('url').value = url
+    if (url !== d.url) chrome.storage.local.set({ url }) // persiste a correção
     $('token').value = d.token || ''
     $('orcamentoEnabled').checked = !!d.orcamentoEnabled
     $('autoReplyEnabled').checked = !!d.autoReplyEnabled

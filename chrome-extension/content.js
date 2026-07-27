@@ -146,11 +146,10 @@ async function ciclo() {
 let cfgApi = { url: '', token: '', orcamentoEnabled: false }
 function carregarApi() {
   chrome.storage.local.get(['url', 'token', 'orcamentoEnabled'], (d) => {
-    cfgApi = {
-      url: (d.url || '').replace(/\/+$/, ''),
-      token: d.token || '',
-      orcamentoEnabled: !!d.orcamentoEnabled,
-    }
+    // Corrige domínio antigo (thays -> pedidos) e persiste a correção.
+    const url = (d.url || '').replace('thays.ibyt.com.br', 'pedidos.ibyt.com.br').replace(/\/+$/, '')
+    if (url && url !== d.url) chrome.storage.local.set({ url })
+    cfgApi = { url, token: d.token || '', orcamentoEnabled: !!d.orcamentoEnabled }
   })
 }
 carregarApi()
