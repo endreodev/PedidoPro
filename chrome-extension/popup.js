@@ -19,12 +19,13 @@ const MSG_PADRAO =
 
 // Carrega config salva
 chrome.storage.local.get(
-  ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem', 'orcamentoEnabled'],
+  ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem', 'orcamentoEnabled', 'contatosEnabled'],
   (d) => {
     const url = fixUrl(d.url)
     $('url').value = url
     if (url !== d.url) chrome.storage.local.set({ url }) // persiste a correção
     $('token').value = d.token || ''
+    $('contatosEnabled').checked = !!d.contatosEnabled
     $('orcamentoEnabled').checked = !!d.orcamentoEnabled
     $('autoReplyEnabled').checked = !!d.autoReplyEnabled
     $('dddPermitido').value = d.dddPermitido || '65'
@@ -56,8 +57,9 @@ $('save').onclick = () => {
   const url = $('url').value.trim().replace(/\/+$/, '')
   const token = $('token').value.trim()
   const orcamentoEnabled = $('orcamentoEnabled').checked
-  if (orcamentoEnabled && (!url || !token)) { show('Informe URL e token para enviar orçamentos.', 'err'); return }
-  chrome.storage.local.set({ url, token, orcamentoEnabled }, () => show('Configuração salva.', 'ok'))
+  const contatosEnabled = $('contatosEnabled').checked
+  if ((orcamentoEnabled || contatosEnabled) && (!url || !token)) { show('Informe URL e token para as sincronizações automáticas.', 'err'); return }
+  chrome.storage.local.set({ url, token, orcamentoEnabled, contatosEnabled }, () => show('Configuração salva.', 'ok'))
 }
 
 // Diagnóstico: testa o caminho real (service worker -> API) e mostra os pendentes.

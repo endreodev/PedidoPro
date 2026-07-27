@@ -147,13 +147,13 @@ async function ciclo() {
 // nunca foi enviado ou quando o orçamento mudou. Só orçamentos (status ORCAMENTO).
 // =====================================================================
 
-let cfgApi = { url: '', token: '', orcamentoEnabled: false }
+let cfgApi = { url: '', token: '', orcamentoEnabled: false, contatosEnabled: false }
 function carregarApi() {
-  chrome.storage.local.get(['url', 'token', 'orcamentoEnabled'], (d) => {
+  chrome.storage.local.get(['url', 'token', 'orcamentoEnabled', 'contatosEnabled'], (d) => {
     // Corrige domínio antigo (thays -> pedidos) e persiste a correção.
     const url = (d.url || '').replace('thays.ibyt.com.br', 'pedidos.ibyt.com.br').replace(/\/+$/, '')
     if (url && url !== d.url) chrome.storage.local.set({ url })
-    cfgApi = { url, token: d.token || '', orcamentoEnabled: !!d.orcamentoEnabled }
+    cfgApi = { url, token: d.token || '', orcamentoEnabled: !!d.orcamentoEnabled, contatosEnabled: !!d.contatosEnabled }
   })
 }
 carregarApi()
@@ -268,15 +268,77 @@ async function pollOrcamentos() {
   }
 }
 
+// Lê os contatos da lista de conversas (nome/telefone), ignorando o DDI. Rola a
+// lista e volta para a posição original para não atrapalhar o usuário.
+async function scrapeListaContatos() {
+  const pane = document.querySelector('#pane-side')
+  if (!pane) return []
+  const seen = new Map()
+  const isPhone = (t) => /^\+?[\d\s()\-.]{8,}$/.test(t) && t.replace(/\D/g, '').length >= 8
+  const soDddNumero = (t) => {
+    let d = (t || '').replace(/\D/g, '')
+    if (d.length >= 12 && d.startsWith('55')) d = d.slice(2)
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+    return d
+  }
+  const collect = () => {
+    document.querySelectorAll('#pane-side [role="row"], #pane-side div[role="listitem"]').forEach((row) => {
+      const span = row.querySelector('span[dir="auto"][title]') || row.querySelector('span[title]')
+      if (!span) return
+      const t = (span.getAttribute('title') || span.textContent || '').trim()
+      if (!t || seen.has(t)) return
+      seen.set(t, isPhone(t) ? { name: '', phone: soDddNumero(t) } : { name: t, phone: '' })
+    })
+  }
+  const topo = pane.scrollTop
+  let last = -1
+  for (let i = 0; i < 60; i++) {
+    collect()
+    if (seen.size === last) break
+    last = seen.size
+    pane.scrollBy(0, pane.clientHeight)
+    await sleep(300)
+  }
+  pane.scrollTo(0, topo)
+  collect()
+  return [...seen.values()]
+}
+
+async function pollContatos() {
+  if (ocupado || !cfgApi.contatosEnabled || !cfgApi.url || !cfgApi.token) return
+  ocupado = true
+  try {
+    const contatos = await scrapeListaContatos()
+    if (!contatos.length) return
+    const resp = await chamarApi({ type: 'sincronizarContatos', contatos })
+    if (resp && resp.ok) {
+      const d = resp.data || {}
+      statusPP(`contatos sincronizados: ${d.criados || 0} novos · ${d.atualizados || 0} atualizados.`, '#1f9d6b')
+    } else if (resp && !resp.ok) {
+      statusPP('falha ao sincronizar contatos (HTTP ' + (resp.status || '?') + ').', '#c0392b')
+    }
+  } finally {
+    ocupado = false
+  }
+}
+
 // Monitor de resposta automática por DDD.
 setInterval(() => { ciclo().catch(() => {}) }, 5000)
 // Envio de orçamentos (busca a conversa na lista, sem navegar).
 setInterval(() => { pollOrcamentos().catch(() => {}) }, 20000)
+// Sincronização automática de contatos: uma vez ao abrir e depois a cada 15 min.
+setTimeout(() => { pollContatos().catch(() => {}) }, 45000)
+setInterval(() => { pollContatos().catch(() => {}) }, 900000)
 
 // Sinaliza que a extensão está ativa (some depois de alguns segundos).
 setTimeout(() => {
-  if (cfgApi.orcamentoEnabled) {
-    statusPP('ativa — monitorando orçamentos a cada 20s.', '#5865f2')
-    setTimeout(() => { const el = document.getElementById('pp-status'); if (el && /monitorando/.test(el.textContent)) el.remove() }, 6000)
+  const ativos = []
+  if (cfgApi.orcamentoEnabled) ativos.push('orçamentos')
+  if (cfgApi.contatosEnabled) ativos.push('contatos')
+  if (cfg.autoReplyEnabled) ativos.push('resposta DDD')
+  if (ativos.length) {
+    statusPP('ativa — ' + ativos.join(' · '), '#5865f2')
+    setTimeout(() => { const el = document.getElementById('pp-status'); if (el && /ativa —/.test(el.textContent)) el.remove() }, 6000)
   }
 }, 4000)

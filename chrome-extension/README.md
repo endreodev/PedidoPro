@@ -23,6 +23,9 @@ Lê os contatos das conversas do **WhatsApp Web** e cadastra como clientes no Pe
 3. O número é salvo **sem o DDI** — só **DDD + número** (ex.: `(65) 98888-7777`).
 4. Repetidos (mesmo DDD+número, com ou sem DDI) **não são duplicados**; se o nome/número mudou, o cadastro é **atualizado**.
 
+## Sincronização automática de contatos
+No popup, marque **Sincronizar contatos automaticamente** e salve. Com o **web.whatsapp.com** aberto, a extensão lê a lista de conversas e envia os contatos ao sistema **sozinha** (uma vez ao abrir e depois a cada ~15 min). Guarda só **DDD + número** (sem DDI) e **não duplica** — atualiza os já existentes. O botão manual **Sincronizar contatos** continua funcionando.
+
 ## Resposta automática (por DDD)
 A extensão pode **monitorar as conversas** e responder sozinha quem tem DDD diferente do que você atende.
 

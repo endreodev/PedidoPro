@@ -35,6 +35,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           body: JSON.stringify({ nunota: msg.nunota, hash: msg.hash }),
         })
         sendResponse({ ok: r.ok, status: r.status })
+      } else if (msg.type === 'sincronizarContatos') {
+        const r = await fetch(url + '/api/v1/integracao/sincronizar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Integration-Key': token },
+          body: JSON.stringify({ contatos: msg.contatos || [] }),
+        })
+        const data = r.ok ? (await r.json()).data : null
+        sendResponse({ ok: r.ok, status: r.status, data })
       } else {
         sendResponse({ ok: false, error: 'tipo desconhecido' })
       }
