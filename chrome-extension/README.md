@@ -22,6 +22,23 @@ Lê os contatos das conversas do **WhatsApp Web** e cadastra como clientes no Pe
    - **Sincronizar contatos do WhatsApp**: rola a lista de conversas e envia **todos** os contatos de uma vez.
 3. Repetidos (mesmo telefone) **não são duplicados**.
 
+## Resposta automática (por DDD)
+A extensão pode **monitorar as conversas** e responder sozinha quem tem DDD diferente do que você atende.
+
+1. No popup, seção **Resposta automática**:
+   - Marque **Ativar monitoramento e resposta automática**.
+   - **DDD que você atende**: `65` (Cuiabá/Várzea Grande-MT) — quem for 65 **não** recebe a mensagem.
+   - **Instagram**: seu @ (entra na mensagem).
+   - **Mensagem**: texto padrão editável; use `{instagram}` onde o @ deve aparecer.
+   - Clique em **Salvar resposta automática**.
+2. Deixe o **web.whatsapp.com** aberto. A cada poucos segundos a extensão verifica conversas **não lidas**; se o DDD do contato não for o permitido, abre a conversa e envia a mensagem — **uma única vez por contato**.
+
+**Importante / limitações:**
+- Responde apenas contatos cujo **número está visível** (não salvos = novos clientes). Contatos **salvos** e **grupos** são ignorados (não dá para ler o DDD com segurança).
+- Nunca responde duas vezes o mesmo número (registro em `chrome.storage`).
+- Enquanto a aba do WhatsApp estiver fechada, nada é enviado.
+- Uso de automação no WhatsApp é por sua conta; mantenha a mensagem curta e sem spam.
+
 ## Como funciona
 - `POST {URL}/api/v1/integracao/sincronizar` com header `X-Integration-Key: <token>` e corpo `{ "contatos": [{ "name": "...", "phone": "..." }] }`.
 - O backend valida o token em `TSIINTEGR`, cria/atualiza em `TGFPAR` (deduplicando por telefone) e registra em auditoria (`TSIAUD`, canal = descrição do token).

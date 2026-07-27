@@ -7,11 +7,35 @@ function show(msg, cls) {
   s.style.display = 'block'
 }
 
+const MSG_PADRAO =
+  'Olá! Agradecemos muito o seu contato 💜 No momento, nosso atendimento é apenas em Cuiabá e Várzea Grande, no estado de Mato Grosso. Para acompanhar as novidades e fazer seu pedido, siga o nosso Instagram: {instagram}'
+
 // Carrega config salva
-chrome.storage.local.get(['url', 'token'], (d) => {
-  $('url').value = d.url || 'https://thays.ibyt.com.br'
-  $('token').value = d.token || ''
-})
+chrome.storage.local.get(
+  ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem'],
+  (d) => {
+    $('url').value = d.url || 'https://thays.ibyt.com.br'
+    $('token').value = d.token || ''
+    $('autoReplyEnabled').checked = !!d.autoReplyEnabled
+    $('dddPermitido').value = d.dddPermitido || '65'
+    $('instagram').value = d.instagram || ''
+    $('mensagem').value = d.mensagem || MSG_PADRAO
+  }
+)
+
+$('saveAuto').onclick = () => {
+  const autoReplyEnabled = $('autoReplyEnabled').checked
+  const dddPermitido = ($('dddPermitido').value.trim().replace(/\D/g, '') || '65')
+  const instagram = $('instagram').value.trim()
+  const mensagem = $('mensagem').value.trim() || MSG_PADRAO
+  if (autoReplyEnabled && !instagram) {
+    show('Informe o @ do Instagram antes de ativar.', 'err')
+    return
+  }
+  chrome.storage.local.set({ autoReplyEnabled, dddPermitido, instagram, mensagem }, () =>
+    show(autoReplyEnabled ? 'Resposta automática ATIVADA.' : 'Configuração salva (desativada).', 'ok')
+  )
+}
 
 $('toggle').onclick = () => {
   const t = $('token')

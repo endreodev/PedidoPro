@@ -1,13 +1,20 @@
 {
   "manifest_version": 3,
   "name": "PedidosPro — Importar contatos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Lê os contatos das suas conversas do WhatsApp Web e cadastra como clientes no PedidosPro (nome e telefone).",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": [
     "https://web.whatsapp.com/*",
     "https://*/*",
     "http://localhost/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_popup": "popup.html",

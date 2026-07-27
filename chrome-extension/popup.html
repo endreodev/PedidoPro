@@ -41,6 +41,26 @@
 
   <div id="status"></div>
 
+  <hr style="border:0;border-top:1px solid #eef0f4;margin:16px 0 4px" />
+  <h1 style="font-size:14px">Resposta automática</h1>
+  <p class="sub">Responde sozinho quem tem DDD diferente do permitido.</p>
+
+  <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+    <input id="autoReplyEnabled" type="checkbox" style="width:auto;height:auto" />
+    <span style="color:#16181d;font-weight:600">Ativar monitoramento e resposta automática</span>
+  </label>
+
+  <label>DDD que você atende (não recebe a mensagem)</label>
+  <input id="dddPermitido" type="text" inputmode="numeric" placeholder="65" maxlength="3" />
+
+  <label>Instagram (usado na mensagem)</label>
+  <input id="instagram" type="text" placeholder="@sualoja" />
+
+  <label>Mensagem automática <span style="font-weight:400">(use <b>{instagram}</b>)</span></label>
+  <textarea id="mensagem" rows="4" style="width:100%;padding:8px 9px;border:1px solid #dfe3ea;border-radius:8px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+
+  <button class="ghost" id="saveAuto" style="width:100%;margin-top:10px">Salvar resposta automática</button>
+
   <p class="muted">
     1) Gere o token em <b>Configurações → Integrações</b> no sistema e cole acima.<br />
     2) Abra o <b>web.whatsapp.com</b> numa aba, com as conversas carregadas.<br />
