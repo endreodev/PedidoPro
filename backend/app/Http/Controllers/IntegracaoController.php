@@ -96,6 +96,118 @@ class IntegracaoController extends Controller
         return response()->json(['data' => $res], 201);
     }
 
+    // ---------- Orçamentos para envio pelo WhatsApp (auth por token) ----------
+
+    // Normaliza para dígitos com DDI 55 (formato aceito pelo WhatsApp).
+    private function normalizarTelefone(?string $tel): ?string
+    {
+        $d = preg_replace('/\D/', '', (string) $tel);
+        if ($d === '') return null;
+        if (!str_starts_with($d, '55') && strlen($d) >= 10 && strlen($d) <= 11) $d = '55' . $d;
+        return strlen($d) >= 12 ? $d : null;
+    }
+
+    private function brl($v): string
+    {
+        return 'R$ ' . number_format((float) $v, 2, ',', '.');
+    }
+
+    // Hash do conteúdo do orçamento: muda quando qualquer item/valor/status muda.
+    private function hashOrcamento($cab, $itens): string
+    {
+        $base = $cab->NUNOTA . '|' . $cab->STATUS . '|' . $cab->CODPARC . '|' . $cab->VLRTOT;
+        foreach ($itens as $it) {
+            $base .= '|' . $it->CODPROD . ':' . $it->QTDNEG . ':' . $it->VLRUNIT . ':' . $it->VLRTOT;
+        }
+        return md5($base);
+    }
+
+    private function montarMensagem($cab, $nome, $itens): string
+    {
+        $linhas = [];
+        $linhas[] = "*Orçamento Nº {$cab->NUNOTA}*";
+        $nome = trim((string) $nome);
+        $linhas[] = 'Olá' . ($nome !== '' ? " {$nome}" : '') . '! Segue o seu orçamento:';
+        $linhas[] = '';
+        foreach ($itens as $it) {
+            $qtd = rtrim(rtrim(number_format((float) $it->QTDNEG, 3, ',', '.'), '0'), ',');
+            $linhas[] = "• {$qtd}x {$it->DESCRPROD} — " . $this->brl($it->VLRTOT);
+        }
+        $linhas[] = '';
+        $linhas[] = '*Total: ' . $this->brl($cab->VLRTOT) . '*';
+        $linhas[] = '';
+        $linhas[] = 'Qualquer dúvida estamos à disposição! 💜';
+        return implode("\n", $linhas);
+    }
+
+    public function orcamentosPendentes(Request $r)
+    {
+        $emp = (int) $r->attributes->get('codemp');
+        $cabs = DB::table('TGFCAB as c')
+            ->join('TGFPAR as p', 'p.CODPARC', '=', 'c.CODPARC')
+            ->where('c.CODEMP', $emp)
+            ->where('c.STATUS', 'ORCAMENTO')
+            ->whereNotNull('p.TELEFONE')->where('p.TELEFONE', '<>', '')
+            ->select('c.NUNOTA', 'c.STATUS', 'c.CODPARC', 'c.VLRTOT', 'p.NOMEPARC', 'p.TELEFONE')
+            ->orderBy('c.NUNOTA')
+            ->get();
+
+        $pendentes = [];
+        foreach ($cabs as $cab) {
+            $telefone = $this->normalizarTelefone($cab->TELEFONE);
+            if (!$telefone) continue;
+
+            $itens = DB::table('TGFITE as i')
+                ->join('TGFPRO as pr', 'pr.CODPROD', '=', 'i.CODPROD')
+                ->where('i.NUNOTA', $cab->NUNOTA)
+                ->select('i.CODPROD', 'i.QTDNEG', 'i.VLRUNIT', 'i.VLRTOT', 'pr.DESCRPROD')
+                ->orderBy('i.SEQUENCIA')->get();
+            if ($itens->isEmpty()) continue;
+
+            $hash = $this->hashOrcamento($cab, $itens);
+            $enviado = DB::table('TSIORCWA')->where('NUNOTA', $cab->NUNOTA)->first();
+            if ($enviado && $enviado->HASHENVIO === $hash) continue; // já enviado e sem alteração
+
+            $pendentes[] = [
+                'nunota' => (int) $cab->NUNOTA,
+                'telefone' => $telefone,
+                'cliente' => $cab->NOMEPARC,
+                'hash' => $hash,
+                'reenvio' => (bool) $enviado,
+                'mensagem' => $this->montarMensagem($cab, $cab->NOMEPARC, $itens),
+            ];
+        }
+
+        return response()->json(['data' => $pendentes]);
+    }
+
+    public function marcarOrcamentoEnviado(Request $r)
+    {
+        $emp = (int) $r->attributes->get('codemp');
+        $canal = (string) $r->attributes->get('canal');
+        $nunota = (int) $r->input('nunota');
+        $hash = (string) $r->input('hash');
+        if (!$nunota || $hash === '') {
+            return response()->json(['code' => 'VALIDATION_ERROR', 'status' => 422, 'detail' => 'nunota e hash são obrigatórios'], 422);
+        }
+        // Garante que o orçamento é da empresa do token.
+        $cab = DB::table('TGFCAB')->where('NUNOTA', $nunota)->where('CODEMP', $emp)->first();
+        if (!$cab) {
+            return response()->json(['code' => 'NOT_FOUND', 'status' => 404, 'detail' => 'orçamento não encontrado'], 404);
+        }
+        DB::statement(
+            'INSERT INTO TSIORCWA (NUNOTA, HASHENVIO, DHENVIO) VALUES (?, ?, NOW())
+             ON DUPLICATE KEY UPDATE HASHENVIO = VALUES(HASHENVIO), DHENVIO = NOW()',
+            [$nunota, $hash]
+        );
+        DB::table('TSIAUD')->insert([
+            'CODEMP' => $emp, 'ENTIDADE' => 'TGFCAB', 'CHAVEREG' => "NUNOTA=$nunota",
+            'ACAO' => 'UPDATE', 'ORIGEM' => 'INTEGRACAO', 'CANAL' => $canal,
+            'OBSERVACAO' => 'Orçamento enviado pelo WhatsApp',
+        ]);
+        return response()->json(['data' => ['nunota' => $nunota, 'ok' => true]]);
+    }
+
     public function sincronizar(Request $r)
     {
         $emp = (int) $r->attributes->get('codemp');

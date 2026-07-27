@@ -256,6 +256,16 @@ CREATE TABLE IF NOT EXISTS TSIINTEGR (
   UNIQUE KEY UK_INTEG_TOKEN (TOKEN)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Controle de envio de orçamentos pelo WhatsApp (extensão).
+-- Guarda o hash do orçamento já enviado; muda o hash quando o orçamento é
+-- alterado, permitindo reenviar só quando muda e nunca repetir o mesmo.
+CREATE TABLE IF NOT EXISTS TSIORCWA (
+  NUNOTA INT UNSIGNED NOT NULL PRIMARY KEY,
+  HASHENVIO VARCHAR(64) NOT NULL,
+  DHENVIO DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT FK_TSIORCWA_CAB FOREIGN KEY (NUNOTA) REFERENCES TGFCAB(NUNOTA) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Reference/seed data (não-bcrypt). Usuários/empresas/produtos vêm do DemoSeeder.

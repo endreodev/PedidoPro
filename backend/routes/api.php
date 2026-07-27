@@ -104,5 +104,7 @@ Route::middleware('jwt')->group(function () {
 Route::middleware('integ')->group(function () {
     Route::post('/integracao/clientes', [IntegracaoController::class, 'criarCliente']);
     Route::post('/integracao/sincronizar', [IntegracaoController::class, 'sincronizar']);
+    Route::get('/integracao/orcamentos-pendentes', [IntegracaoController::class, 'orcamentosPendentes']);
+    Route::post('/integracao/orcamentos-enviados', [IntegracaoController::class, 'marcarOrcamentoEnviado']);
 });
 

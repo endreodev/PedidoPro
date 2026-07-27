@@ -12,10 +12,11 @@ const MSG_PADRAO =
 
 // Carrega config salva
 chrome.storage.local.get(
-  ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem'],
+  ['url', 'token', 'autoReplyEnabled', 'dddPermitido', 'instagram', 'mensagem', 'orcamentoEnabled'],
   (d) => {
     $('url').value = d.url || 'https://thays.ibyt.com.br'
     $('token').value = d.token || ''
+    $('orcamentoEnabled').checked = !!d.orcamentoEnabled
     $('autoReplyEnabled').checked = !!d.autoReplyEnabled
     $('dddPermitido').value = d.dddPermitido || '65'
     $('instagram').value = d.instagram || ''
@@ -45,7 +46,9 @@ $('toggle').onclick = () => {
 $('save').onclick = () => {
   const url = $('url').value.trim().replace(/\/+$/, '')
   const token = $('token').value.trim()
-  chrome.storage.local.set({ url, token }, () => show('Configuração salva.', 'ok'))
+  const orcamentoEnabled = $('orcamentoEnabled').checked
+  if (orcamentoEnabled && (!url || !token)) { show('Informe URL e token para enviar orçamentos.', 'err'); return }
+  chrome.storage.local.set({ url, token, orcamentoEnabled }, () => show('Configuração salva.', 'ok'))
 }
 
 // Função injetada na página do WhatsApp Web para ler os contatos da lista.

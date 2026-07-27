@@ -136,6 +136,95 @@ async function ciclo() {
   }
 }
 
-setInterval(() => {
-  ciclo().catch(() => {})
-}, 5000)
+// =====================================================================
+// Envio de ORÇAMENTOS pelo WhatsApp
+// Consulta o endpoint do sistema, envia para o telefone do cliente e confirma.
+// O servidor controla duplicidade/alteração por hash: só volta na lista quando
+// nunca foi enviado ou quando o orçamento mudou. Só orçamentos (status ORCAMENTO).
+// =====================================================================
+
+let cfgApi = { url: '', token: '', orcamentoEnabled: false }
+function carregarApi() {
+  chrome.storage.local.get(['url', 'token', 'orcamentoEnabled'], (d) => {
+    cfgApi = {
+      url: (d.url || '').replace(/\/+$/, ''),
+      token: d.token || '',
+      orcamentoEnabled: !!d.orcamentoEnabled,
+    }
+  })
+}
+carregarApi()
+chrome.storage.onChanged.addListener(carregarApi)
+
+const getLocal = (k) => new Promise((r) => chrome.storage.local.get([k], (d) => r(d[k])))
+const setLocal = (o) => new Promise((r) => chrome.storage.local.set(o, r))
+
+async function esperarFooter(timeoutMs) {
+  const fim = Date.now() + timeoutMs
+  while (Date.now() < fim) {
+    if (document.querySelector('#main footer div[contenteditable="true"][role="textbox"]')) return true
+    await sleep(300)
+  }
+  return false
+}
+
+// Após navegar para send?phone, completa o envio do orçamento pendente.
+async function completarOrcamentoPendente() {
+  const atual = await getLocal('waOrcAtual')
+  if (!atual) return
+  // Segurança: só completa se a navegação foi recente (evita envio errado em reload solto).
+  if (!atual.ts || Date.now() - atual.ts > 90000) {
+    await setLocal({ waOrcAtual: null })
+    return
+  }
+  const abriu = await esperarFooter(20000)
+  if (!abriu) {
+    const skip = (await getLocal('waOrcSkip')) || {}
+    skip[atual.nunota] = Date.now()
+    await setLocal({ waOrcSkip: skip, waOrcAtual: null })
+    return
+  }
+  const ok = await enviar(atual.mensagem)
+  if (ok) {
+    const { url, token } = cfgApi.token ? cfgApi : { url: (await getLocal('url') || '').replace(/\/+$/, ''), token: await getLocal('token') }
+    try {
+      await fetch(url + '/api/v1/integracao/orcamentos-enviados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Integration-Key': token },
+        body: JSON.stringify({ nunota: atual.nunota, hash: atual.hash }),
+      })
+    } catch (e) { /* tenta confirmar de novo no próximo poll (hash ainda pendente) */ }
+  }
+  await setLocal({ waOrcAtual: null })
+}
+
+async function pollOrcamentos() {
+  if (ocupado || !cfgApi.orcamentoEnabled || !cfgApi.url || !cfgApi.token) return
+  if (await getLocal('waOrcAtual')) return // envio em andamento (aguardando navegação)
+
+  let lista = []
+  try {
+    const r = await fetch(cfgApi.url + '/api/v1/integracao/orcamentos-pendentes', {
+      headers: { 'X-Integration-Key': cfgApi.token },
+    })
+    if (!r.ok) return
+    lista = (await r.json()).data || []
+  } catch (e) { return }
+  if (!lista.length) return
+
+  const skip = (await getLocal('waOrcSkip')) || {}
+  const agora = Date.now()
+  const cand = lista.find((o) => !skip[o.nunota] || agora - skip[o.nunota] > 3600000)
+  if (!cand) return
+
+  await setLocal({ waOrcAtual: { nunota: cand.nunota, hash: cand.hash, telefone: cand.telefone, mensagem: cand.mensagem, ts: Date.now() } })
+  // Abre a conversa do número (mesmo não salvo). O reload continua o envio.
+  location.href = 'https://web.whatsapp.com/send?phone=' + encodeURIComponent(cand.telefone)
+}
+
+// Monitor de resposta automática por DDD.
+setInterval(() => { ciclo().catch(() => {}) }, 5000)
+
+// Envio de orçamentos: primeiro completa um pendente pós-navegação, depois busca novos.
+;(async () => { try { await completarOrcamentoPendente() } catch (e) {} })()
+setInterval(() => { pollOrcamentos().catch(() => {}) }, 20000)

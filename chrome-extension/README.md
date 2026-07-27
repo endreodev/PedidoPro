@@ -39,6 +39,21 @@ A extensão pode **monitorar as conversas** e responder sozinha quem tem DDD dif
 - Enquanto a aba do WhatsApp estiver fechada, nada é enviado.
 - Uso de automação no WhatsApp é por sua conta; mantenha a mensagem curta e sem spam.
 
+## Envio de orçamentos pelo WhatsApp
+Quando um **orçamento** (status `ORCAMENTO`) é feito no sistema para um cliente com telefone, a extensão envia o orçamento no WhatsApp automaticamente.
+
+1. No popup, marque **Enviar orçamentos automaticamente pelo WhatsApp** e salve (usa a mesma **URL** e **token**).
+2. Deixe o **web.whatsapp.com** aberto. A cada ~20s a extensão consulta o sistema; havendo orçamento pendente, abre a conversa do número do cliente e envia a mensagem com os itens e o total.
+
+Regras (controladas pelo servidor via hash do orçamento):
+- **Nunca envia repetido** o mesmo orçamento.
+- **Reenvia quando o orçamento é alterado** (item, quantidade, valor).
+- Envia **apenas** orçamentos com status `ORCAMENTO` e cliente com telefone.
+
+Endpoints (auth por `X-Integration-Key`):
+- `GET /api/v1/integracao/orcamentos-pendentes` → lista `{ nunota, telefone, hash, mensagem }`.
+- `POST /api/v1/integracao/orcamentos-enviados` `{ nunota, hash }` → confirma o envio.
+
 ## Como funciona
 - `POST {URL}/api/v1/integracao/sincronizar` com header `X-Integration-Key: <token>` e corpo `{ "contatos": [{ "name": "...", "phone": "..." }] }`.
 - O backend valida o token em `TSIINTEGR`, cria/atualiza em `TGFPAR` (deduplicando por telefone) e registra em auditoria (`TSIAUD`, canal = descrição do token).
