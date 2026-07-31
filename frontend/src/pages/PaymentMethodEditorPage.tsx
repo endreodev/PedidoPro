@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { useDataStore } from '../stores/dataStore'
 import { useAppStore } from '../stores/appStore'
 import { showToast } from '../components/common/Toast'
@@ -48,9 +48,16 @@ export default function PaymentMethodEditorPage() {
       <section className="bg-surface border border-border rounded-lg shadow-card p-6 space-y-4">
         <label className="block text-sm">Nome<input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} autoFocus /></label>
         <label className="block text-sm">Tipo
-          <select className="input" value={form.type} onChange={(e) => set('type', e.target.value as PFType)}>
-            {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
+          <div className="relative mt-1">
+            <select
+              className="w-full h-10 pl-3 pr-9 rounded-md border border-border bg-surface text-text-primary text-sm appearance-none leading-tight focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+              value={form.type}
+              onChange={(e) => set('type', e.target.value as PFType)}
+            >
+              {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary" />
+          </div>
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-sm">Taxa (%)<input type="number" step="0.1" className="input mono" value={form.fee_percentage} onChange={(e) => set('fee_percentage', Number(e.target.value))} /></label>
